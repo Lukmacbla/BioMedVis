@@ -88,7 +88,7 @@ The initial dataset consists of the following columns (variables):
     `max_glu_serum`, \
     `A1Cresult`
   ], [Result of laboratory tests, if performed], par(justify: false)[
-    
+    e.g.: '`Normal`', '`>200`', '`>300`', '`None`'
   ],
   [
     `metformin`, \
