@@ -130,8 +130,33 @@ These are the initial research questions we formulated:
 
 + What are the highest risk factors for patient readmission?
 + What are the key differences between early and late readmission?
++ How does a change in medication strategy change the readmission risk?
 
+
+#pagebreak()
 
 = Exploratory Analysis
+
+First we want to get an overview of the different patient attributes in the dataset.
+
+
+#figure(
+  caption: "Distribution of patient attributes",
+  grid(columns: 2)[
+    #image("img/image.png", width: 100%)
+  ][
+    #image("img/image-1.png", width: 100%)
+  ][
+    #image("img/image-age.png", width: 100%)
+  ][
+    #image("img/image-weight.png")
+  ]
+)
+
+Let us analyze each attribute:
+- *Gender*: The majority of patients are classified as female in the dataset.
+- *Race*: Most patients are classified as Caucasian, followed by African American. This makes sense given the origin of the data. A significant portion of the dataset has missing values for this attribute.
+- *Age*: The age distribution shows that most patients are between 50 and 80 years old.
+- *Weight*: The weight attribute has a large number of missing values, making it difficult to draw conclusions. Among the available data, most patients fall into the weight categories between 75 and 125.
 
 = Summary
