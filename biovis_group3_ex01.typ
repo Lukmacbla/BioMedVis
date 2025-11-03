@@ -243,7 +243,7 @@ The variables have the following datatypes:
 
 These are the initial research questions we formulated:
 
-+ What are the highest risk factors for patient readmission?
++ What are the highest risk factors for patient readmission? (Main question)
 + Which race, gender, or age-related differences are there?
 + What are the key differences between early and late readmission?
 + How does a change in medication strategy change the readmission risk?
