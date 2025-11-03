@@ -276,7 +276,7 @@ Let us analyze each attribute:
 
 #pagebreak()
 
-To test the reliability of the dataset we want to test some hyptotheses regarding the variables. If we analyse the values of the variable `time_in_hospital`, `num_procedures` and `num_medications` we should see some correlation between them. The more procedures and medications a patient has, the longer they should stay in the hospital.
+To test the reliability of the dataset we want to test some hypotheses regarding the variables. If we analyse the values of the variable `time_in_hospital`, `num_procedures` and `num_medications` we should see some correlation between them. The more procedures and medications a patient has, the longer they should stay in the hospital.
 
 We check for this by exploring the numerical correlations in the dataset. The following correlation matrix shows the correlations between the values in the dataset (id values excluded).
 
@@ -344,7 +344,7 @@ Now let us take a look at the time spent per encounter. The following Graph show
 #figure(
   image("img/distribution_time_in_hospital.png", width: 90%)
 )
-A broad overview over how long patients are in the hospital is displayed here. The goal of this is to understand the more detailed stay duration visalization in the next graph better.
+A broad overview over how long patients are in the hospital is displayed here. The goal of this is to understand the more detailed stay duration visualization in the next graph better.
 
 
 The next graph has the aim to show the correllation of diagnosis and the time spent in the hospital to readmissions
@@ -396,3 +396,16 @@ Interestingly, increasing the dosage of rosiglitazone ('Up') is associated with 
 #pagebreak()
 
 = Summary
+
+In this document, we visually explored a large diabetes patient admissions dataset from multiple US hospital over a ten-year period, containing over 100,000 rows and 50 variables.
+
+The analysis begins with an overview of the structure of the dataset as well as the challenges it contains, such as missing values, inconsistent namings, overlapping categorical entries.
+Then, four Research Questions were proposed, which were investigated in the following analysis. These focus on the identification of major risk factors for readmissions, the role of demographics, differences of early and late readmission as well as the influence of medication strategies.
+
+Our visualizations show a clear correlation between number of procedures and medications and the length of the hospital stay. They also show slight differences when grouping patients based on different demographics.
+Despite this, high glucose serum levels seems to have an effect on the readmission rate. The analysis also shows that weight is the biggest risk factor for readmission, while race and the admission source have the smallest risk factor of readmission.
+It also reveals a clear trend between the number of diagnosis and the readmission rate. Investiagtions into effects due to the medications reveal that with some medications, an increase in dosage decreases the risk for readmission, while for others this is true for an decrease of dosage.
+
+Summing up, there seem to be some correlations between certain influence factors and readmission, however, no definitive actions can be derived without the need for further analysis.
+
+
