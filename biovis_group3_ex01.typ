@@ -288,6 +288,37 @@ This visualization shows that there are indeed correlations between the number o
 
 #pagebreak()
 
+== What are the highest risk factors for patient readmission?
+
+First we want to analyze which patient attributes have the highest impact on readmission rates. The following chart shows the readmission rates for different patient demographics. Since readmission is a categorical variable in the original dataset, we convert it to a binary variable indicating whether a patient was readmitted or not, for the following charts.
+
+#info[
+  Only categories with a significant number of samples (>50) are shown.
+]
+
+#figure(
+  image("img/readmission_rate_by_demographics.svg", width: 100%)
+)
+
+Next, we are able to analyze different lab test results and their impact on readmission rates.
+
+#figure(
+  image("img/readmission_risk_based_on_clinical_indicators.svg", width: 60%)
+)
+
+We can see that that a high glucose serum level (>300) is associated with a higher readmission rate in this dataset. The same applies to the A1C result to a lesser extent.
+
+#pagebreak()
+
+Here we analyzed the distribution of readmission risks across different categories. Category groups with a low sample size (\<50) were excluded from this analysis to ensure statistical significance.
+
+#figure(
+  image("img/readmission_risk_category_distributions.svg", width: 100%)
+)
+
+We can see that certain factors like the admission source have a wide distribution of readmission rates across their categories, indicating that some categories within these factors are associated with significantly higher or lower readmission risks. Other factors like gender or A1C result have a very narrow distribution, indicating that they are not significant predictors of readmission risk.
+#pagebreak() 
+
 == Within each primary diagnosis group, what are the top independent predictors of a readmission?
 This scatterplot shows the readmission rate grouped by the number of diagnosis of a patient.
 #image("img/scatter_Readmission_Rate_ToDiagnoses.png")
@@ -298,9 +329,14 @@ The following graph shows exactly this.
 
 The main insight we gain here is that in all ICD-9 chapters the amount of people who are not readmitted is the highest. We can also see that the distribution is similar in all areas. Therefore this does not show us a clear trend
 
+#pagebreak()
+
+=== Analysis of patient encounter variables
 
 This Graph shows how many people spent how much time in the hospital.
-#image("img/distribution_time_in_hospital.png")
+#figure(
+  image("img/distribution_time_in_hospital.png", width: 100%)
+)
 A broad overview over how long patients are in the hospital is displayed here. The goal of this is to understand the more detailed stay duration visalization in the next graph better.
 
 
