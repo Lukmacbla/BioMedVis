@@ -40,11 +40,26 @@ The initial dataset consists of the following columns (variables):
   ],
   [`encounter_id`], [Every encounter with a patient has a unique identifying number.], [Integers.],
   [`patient_nbr`], [Every patient has a unique identifying number.], [Integers.],
-  [`race`], [The race of the patient.], par(justify: false)[`'Caucasian', 'AfricanAmerican', '?', 'Other', 'Asian', 'Hispanic'`],
+  [`race`],
+  [The race of the patient.],
+  par(justify: false)[`'Caucasian', 'AfricanAmerican', '?', 'Other', 'Asian', 'Hispanic'`],
+
   [`gender`], [The gender of the patient.], par(justify: false)[`'Female', 'Male', 'Unknown/Invalid'`],
-  [`age`], [The age group of the patient.], par(justify: false)[`'[0-10)', '[10-20)',  '[20-30)', '[30-40)', '[40-50)', '[50-60)', '[60-70)', '[70-80)', '[80-90)', '[90-100)'`],
-  [`weight`], [The weight group of the patient.], par(justify: false)[`'?', '[0-25)', '[25-50)', '[50-75)', '[75-100)', '[100-125)', '[125-150)', '[150-175)', '[175-200)', '>200'`],
-  [`admission_type_id`], [An ID mapping to the type of admission.], par(justify: false)[
+  [`age`],
+  [The age group of the patient.],
+  par(
+    justify: false,
+  )[`'[0-10)', '[10-20)',  '[20-30)', '[30-40)', '[40-50)', '[50-60)', '[60-70)', '[70-80)', '[80-90)', '[90-100)'`],
+
+  [`weight`],
+  [The weight group of the patient.],
+  par(
+    justify: false,
+  )[`'?', '[0-25)', '[25-50)', '[50-75)', '[75-100)', '[100-125)', '[125-150)', '[150-175)', '[175-200)', '>200'`],
+
+  [`admission_type_id`],
+  [An ID mapping to the type of admission.],
+  par(justify: false)[
     `Emergency` (1),
     `Urgent` (2),
     `Elective` (3),
@@ -54,18 +69,31 @@ The initial dataset consists of the following columns (variables):
     `Trauma Center` (7),
     `Not Mapped` (8),
   ],
-  [`discharge_disposition_id`], [An ID mapping to the discharge disposition.], par(justify: false)[
+
+  [`discharge_disposition_id`],
+  [An ID mapping to the discharge disposition.],
+  par(justify: false)[
     Integer from 1-29. Examples are `Discharged to home` (1), `Expired` (11), `Hospice / home` (13), `NULL` (18)
   ],
-  [`admission_source_id`], [An ID mapping to the source of admission.], par(justify: false)[
+
+  [`admission_source_id`],
+  [An ID mapping to the source of admission.],
+  par(justify: false)[
     Integer from 1-26. Examples are `Physician Referral` (1), `Clinic Referral` (2), `Transfer from a hospital` (4), `NULL` (17)
   ],
-  [`time_in_hostpital`], [Number of days the patient stayed at the hospital.], par(justify: false)[
+
+  [`time_in_hostpital`],
+  [Number of days the patient stayed at the hospital.],
+  par(justify: false)[
     Integers (number of days).
   ],
-  [`medical_specialty`], [What type of medical specialty was dealing with the patient.], par(justify: false)[
+
+  [`medical_specialty`],
+  [What type of medical specialty was dealing with the patient.],
+  par(justify: false)[
     `'Pediatrics-Endocrinology', '?', 'InternalMedicine', 'Family/GeneralPractice', 'Cardiology', 'Surgery-General', 'Orthopedics', ...`
   ],
+
   [
     `num_lab_procedures`, \
     `num_procedures`, \
@@ -74,22 +102,31 @@ The initial dataset consists of the following columns (variables):
     `number_emergency`, \
     `number_inpatient`, \
     `number_diagnoses` \
-  ], [Several metrics counting certain actions performed by the hospital staff or prior patient history.], par(justify: false)[
+  ],
+  [Several metrics counting certain actions performed by the hospital staff or prior patient history.],
+  par(justify: false)[
     Integers.
   ],
+
   [
     `diag_1`, \
     `diag_2`, \
     `diag_3` \
-  ], [Diagnosis as ICD-9 code. (See https://en.wikipedia.org/wiki/List_of_ICD-9_codes)], par(justify: false)[
+  ],
+  [Diagnosis as ICD-9 code. (See https://en.wikipedia.org/wiki/List_of_ICD-9_codes)],
+  par(justify: false)[
     ICD-9 code.
   ],
+
   [
     `max_glu_serum`, \
     `A1Cresult`
-  ], [Result of laboratory tests, if performed], par(justify: false)[
+  ],
+  [Result of laboratory tests, if performed],
+  par(justify: false)[
     e.g.: '`Normal`', '`>200`', '`>300`', '`None`'
   ],
+
   [
     `metformin`, \
     `repaglinide`, \
@@ -98,19 +135,29 @@ The initial dataset consists of the following columns (variables):
     `...`, \
     `insulin`, \
 
-  ], [Several medication statuses.], par(justify: false)[
+  ],
+  [Several medication statuses.],
+  par(justify: false)[
     `'No', 'Steady', 'Down', 'Up'`
   ],
-  [`change`], [If the medication changed in any way.], par(justify: false)[
+
+  [`change`],
+  [If the medication changed in any way.],
+  par(justify: false)[
     `'Ch', 'No'`
   ],
-  [`diabetesMed`], [If the patient takes diabetes medication.], par(justify: false)[
+
+  [`diabetesMed`],
+  [If the patient takes diabetes medication.],
+  par(justify: false)[
     `'Yes', 'No'`
   ],
-  [`readmitted`], [If and after how many days a patient has been readmitted.], par(justify: false)[
+
+  [`readmitted`],
+  [If and after how many days a patient has been readmitted.],
+  par(justify: false)[
     `'NO', '<30', '>30'`
   ],
-  
 )
 
 #pagebreak()
@@ -151,7 +198,7 @@ First we want to get an overview of the different patient attributes in the data
     #image("img/image-age.png", width: 100%)
   ][
     #image("img/image-weight.png")
-  ]
+  ],
 )
 
 Let us analyze each attribute:
@@ -159,5 +206,30 @@ Let us analyze each attribute:
 - *Race*: Most patients are classified as Caucasian, followed by African American. This makes sense given the origin of the data. A significant portion of the dataset has missing values for this attribute.
 - *Age*: The age distribution shows that most patients are between 50 and 80 years old.
 - *Weight*: The weight attribute has a large number of missing values, making it difficult to draw conclusions. Among the available data, most patients fall into the weight categories between 75 and 125.
+== Within each primary diagnosis group, what are the top independent predictors of a readmission?
+This scatterplot shows the readmission rate grouped by the number of diagnosis of a patient.
+#image("img/scatter_Readmission_Rate_ToDiagnoses.png")
+This plot shows a clear trend in readmittions as the odds of readmittion increase directly proportional with the number of diagnosis. Now it would be interesting if there are some diagnosis types which increase the readmission adds more then others.
 
+The following graph shows exactly this.
+#image("img/IDC_9Categories_toReadmissions.png")
+
+The main insight we gain here is that in all ICD-9 chapters the amount of people who are not readmitted is the highest. We can also see that the distribution is similar in all areas. Therefore this does not show us a clear trend
+
+
+This Graph shows how many people spent how much time in the hospital.
+#image("img/distribution_time_in_hospital.png")
+A broad overview over how long patients are in the hospital is displayed here. The goal of this is to understand the more detailed stay duration visalization in the next graph better.
+
+
+The next graph has the aim to show the correllation of diagnosis and the time spent in the hospital to readmissions
+#image("img/time_in_hospital_to_readmittion.png")
+One can see that the time stayed in the hospital generally has a high variance with some outliers. In the chapter 16, Symptoms/signs/ill-defined, the time in hospital is very low for patients who are not readmitted but get visibly higher the sooner the readmission is. This can be investigated.
+
+== What are the key differences between early (\<30 days) and late (>30 days) readmission?
+This Visualization shows a Sankey diagram where the patient flow from the first admission to the discharge type to the readmission is shown. Only patient flows over 1% are shown. The oders are grouped in others
+#image("img/admission_discharge_outcome_.png")
+We learn from this where patients most likely are admitted from and we can get an overview. Most patients are admitted through the emergency room or are admitted by another physician. But there is no clear trend visible that shows which kind of discharge type is most likely to result in readmission, as all look quite similar.
+
+== How does a change in medication strategy change the readmission risk?
 = Summary
