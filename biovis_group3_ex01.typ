@@ -333,9 +333,16 @@ The main insight we gain here is that in all ICD-9 chapters the amount of people
 
 === Analysis of patient encounter variables
 
-This Graph shows how many people spent how much time in the hospital.
+We can also analyze certain variables that describe the patient encounters. First we want to look at the prior healthcare utilization of patients and its effect on readmission risk.
+
 #figure(
-  image("img/distribution_time_in_hospital.png", width: 100%)
+  image("img/readmission_risk_based_on_prior_healthcare_utilization.svg", width: 80%)
+)
+
+
+Now let us take a look at the time spent per encounter. The following Graph shows how many people spent how much time in the hospital.
+#figure(
+  image("img/distribution_time_in_hospital.png", width: 90%)
 )
 A broad overview over how long patients are in the hospital is displayed here. The goal of this is to understand the more detailed stay duration visalization in the next graph better.
 
@@ -344,10 +351,14 @@ The next graph has the aim to show the correllation of diagnosis and the time sp
 #image("img/time_in_hospital_to_readmittion.png")
 One can see that the time stayed in the hospital generally has a high variance with some outliers. In the chapter 16, Symptoms/signs/ill-defined, the time in hospital is very low for patients who are not readmitted but get visibly higher the sooner the readmission is. This can be investigated.
 
+#pagebreak()
+
 == What are the key differences between early (\<30 days) and late (>30 days) readmission?
 This Visualization shows a Sankey diagram where the patient flow from the first admission to the discharge type to the readmission is shown. Only patient flows over 1% are shown. The oders are grouped in others
 #image("img/admission_discharge_outcome_.png")
 We learn from this where patients most likely are admitted from and we can get an overview. Most patients are admitted through the emergency room or are admitted by another physician. But there is no clear trend visible that shows which kind of discharge type is most likely to result in readmission, as all look quite similar.
+
+#pagebreak()
 
 == How does a change in medication strategy change the readmission risk?
 
@@ -367,6 +378,8 @@ For the next analysis we grouped the medication statuses into two categories: 'P
 
 From this chart, we can see that for most medications, being prescribed the medication is associated with a higher readmission rate compared to not being prescribed it. However, not being prescribed metformin, for example, is associated with a notably higher readmission rate compared to being prescribed it.
 
+#pagebreak()
+
 This heatmap shows the readmission rates for each medication based on whether it was never prescribed, decreased, increased, or stayed the same. It excludes status changes with fewer than 100 samples to ensure statistical significance.
 
 #figure(
@@ -379,5 +392,7 @@ Interestingly, increasing the dosage of rosiglitazone ('Up') is associated with 
 #warning[
   These findings should be interpreted with caution. Other factors my influence readmission rates and medication changes beyond the scope of this analysis.
 ]
+
+#pagebreak()
 
 = Summary
