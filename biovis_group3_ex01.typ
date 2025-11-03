@@ -281,7 +281,7 @@ To test the reliability of the dataset we want to test some hyptotheses regardin
 We check for this by exploring the numerical correlations in the dataset. The following correlation matrix shows the correlations between the values in the dataset (id values excluded).
 
 #figure(
-  image("img/correlation_matrix.png", width: 80%)
+  image("img/correlation_matrix.svg", width: 100%)
 )
 
 This visualization shows that there are indeed correlations between the number of procedures/medications and the time spent in the hospital. Other correlations that can be seen are for example between the number of  emergency and inpatient visits.
@@ -325,7 +325,7 @@ This scatterplot shows the readmission rate grouped by the number of diagnosis o
 This plot shows a clear trend in readmissions as the odds of readmission increase directly proportional with the number of diagnosis. Now it would be interesting if there are some diagnosis types which increase the readmission odds more then others.
 
 The following graph shows exactly this.
-#image("img/IDC_9Categories_toReadmissions.png")
+#image("img/IDC_9Categories_toReadmissions.svg")
 
 The main insight we gain here is that in all ICD-9 chapters the amount of people who are not readmitted is the highest. We can also see that the distribution is similar in all areas. Therefore this does not show us a clear trend
 
