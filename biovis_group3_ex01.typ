@@ -1,4 +1,4 @@
-#import "@preview/gentle-clues:1.2.0": info
+#import "@preview/gentle-clues:1.2.0": info, warning
 
 
 #set page(numbering: "1 of 1")
@@ -185,11 +185,10 @@ These are the initial research questions we formulated:
 
 = Exploratory Analysis
 
-First we want to get an overview of the different patient attributes in the dataset.
+First we want to get an overview of the dataset. We start by analyzing different patient attributes for each encounter.
 
 
 #figure(
-  caption: "Distribution of patient attributes",
   grid(columns: 2)[
     #image("img/image.png", width: 100%)
   ][
@@ -202,14 +201,29 @@ First we want to get an overview of the different patient attributes in the data
 )
 
 Let us analyze each attribute:
-- *Gender*: The majority of patients are classified as female in the dataset.
-- *Race*: Most patients are classified as Caucasian, followed by African American. This makes sense given the origin of the data. A significant portion of the dataset has missing values for this attribute.
-- *Age*: The age distribution shows that most patients are between 50 and 80 years old.
-- *Weight*: The weight attribute has a large number of missing values, making it difficult to draw conclusions. Among the available data, most patients fall into the weight categories between 75 and 125.
+- *Gender*: The majority of encounters feature patients classified as female in the dataset.
+- *Race*: Most encounters feature patients classified as Caucasian, followed by African American. This makes sense given the origin of the data. A significant portion of the dataset has missing values for this attribute.
+- *Age*: The age distribution shows that most encounters feature patients between 50 and 80 years old.
+- *Weight*: The weight attribute has a large number of missing values, which is probably because patients were not weighed consistently during their visits. Among the available data, most encounters feature patients in the weight categories between 75 and 125.
+
+#pagebreak()
+
+To test the reliability of the dataset we want to test some hyptotheses regarding the variables. If we analyse the values of the variable `time_in_hospital`, `num_procedures` and `num_medications` we should see some correlation between them. The more procedures and medications a patient has, the longer they should stay in the hospital.
+
+We check for this by exploring the numerical correlations in the dataset. The following correlation matrix shows the correlations between the values in the dataset (id values excluded).
+
+#figure(
+  image("img/correlation_matrix.png", width: 80%)
+)
+
+This visualization shows that there are indeed correlations between the number of procedures/medications and the time spent in the hospital. Other correlations that can be seen are for example between the number of  emergency and inpatient visits.
+
+#pagebreak()
+
 == Within each primary diagnosis group, what are the top independent predictors of a readmission?
 This scatterplot shows the readmission rate grouped by the number of diagnosis of a patient.
 #image("img/scatter_Readmission_Rate_ToDiagnoses.png")
-This plot shows a clear trend in readmittions as the odds of readmittion increase directly proportional with the number of diagnosis. Now it would be interesting if there are some diagnosis types which increase the readmission adds more then others.
+This plot shows a clear trend in readmissions as the odds of readmission increase directly proportional with the number of diagnosis. Now it would be interesting if there are some diagnosis types which increase the readmission odds more then others.
 
 The following graph shows exactly this.
 #image("img/IDC_9Categories_toReadmissions.png")
@@ -232,4 +246,34 @@ This Visualization shows a Sankey diagram where the patient flow from the first 
 We learn from this where patients most likely are admitted from and we can get an overview. Most patients are admitted through the emergency room or are admitted by another physician. But there is no clear trend visible that shows which kind of discharge type is most likely to result in readmission, as all look quite similar.
 
 == How does a change in medication strategy change the readmission risk?
+
+Next we want to look at the effect of medication changes on readmission risk. In the following chart we can see the readmission rates by medication and change status.
+
+#figure(
+  image("img/readmission_by_key_medication.svg", width: 100%)
+)
+
+What is immediately apparent is that different medications have very different readmission rates depending on whether the medication was increased, decreased or stayed the same. For example, for Metformin, patients whose medication was increased ('Up') have a significantly lower readmission rate compared to those whose medication stayed the same ('Steady') or decreased ('Down'). This suggests that increasing Metformin dosage may be beneficial in reducing readmission rates.
+
+For the next analysis we grouped the medication statuses into two categories: 'Prescribed' (which includes both 'Steady' and 'Up') and 'Not Prescribed'. This allows us to compare the overall effect of being on a medication versus not being on it at all.
+
+#figure(
+  image("img/readmission_rate_by_prescription_of_medication.svg", width: 100%)
+)
+
+From this chart, we can see that for most medications, being prescribed the medication is associated with a higher readmission rate compared to not being prescribed it. However, not being prescribed metformin, for example, is associated with a notably higher readmission rate compared to being prescribed it.
+
+This heatmap shows the readmission rates for each medication based on whether it was never prescribed, decreased, increased, or stayed the same. It excludes status changes with fewer than 100 samples to ensure statistical significance.
+
+#figure(
+  image("img/readmission_rate_heatmap.svg", width: 100%)
+
+)
+
+Interestingly, increasing the dosage of rosiglitazone ('Up') is associated with a lower readmission rate compared to other medications. This would suggest that increasing rosiglitazone dosage may be particularly effective in reducing readmission rates. Notably, rosiglitazone is known to have cardiovascular side effects#footnote[https://www.pharmawiki.ch/wiki/index.php?wiki=Rosiglitazon], which led to it being withdrawn from the market in several countries (e.g. the EU#footnote[https://www.ema.europa.eu/en/medicines/human/EPAR/avandia]).
+
+#warning[
+  These findings should be interpreted with caution. Other factors my influence readmission rates and medication changes beyond the scope of this analysis.
+]
+
 = Summary
