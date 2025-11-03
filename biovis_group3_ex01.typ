@@ -167,7 +167,7 @@ The variables have the following datatypes:
       columns: (auto, auto),
       align: (left, left),
       table.header(
-        [Variable Name], [Data Type]
+        [*Variable Name*], [*Data Type*]
       ),
       [encounter_id], [int64],
       [patient_nbr], [int64],
