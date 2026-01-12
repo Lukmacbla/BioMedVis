@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
+from basicplots import get_barchart
 from filters import load_data, filter_by_age
 
 # Running the Streamlit app
@@ -56,13 +57,7 @@ age_filtered_df = filter_by_age(dataframe, selected_ages)
 race_counts = age_filtered_df['race'].value_counts().reset_index()
 race_counts.columns = ['race', 'count']  # rename columns for Altair
 # Create a bar chart
-event = alt.Chart(race_counts).mark_bar().encode(
-    x='race',         # races on x-axis
-    y='count',        # counts on y-axis
-    tooltip=['race', 'count']  # hover shows race and count
-).properties(
-    title='Number of penguins per race'
-)
+
 # col2.write(event)
 
 # -------------------------------
@@ -92,7 +87,7 @@ def filtered_table(event):
 
 #filtered = filtered_table(event)
 
-# Add another bar chart with linked selections
+# Add graphs
+race_count = get_barchart(race_counts)
 
-
-st.altair_chart(event)
+st.altair_chart(race_count)
