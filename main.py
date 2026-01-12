@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
+from filters import load_data, filter_by_age
+
 # Running the Streamlit app
 # streamlit run app.py
 
@@ -14,9 +16,7 @@ st.markdown("Use this Streamlit app to make your own scatterplot about penguins!
 # -------------------------------
 # 1) Data loading and cached
 # -------------------------------
-@st.cache_data
-def load_data():
-    return pd.read_csv("data/diabetic_data.csv")
+
 
 
 dataframe = load_data()
@@ -50,7 +50,7 @@ selected_ages = st.sidebar.multiselect(
 
 # Plot the altair chart on Streamlit app
 
-age_filtered_df = dataframe[dataframe["age"].isin(selected_ages)]
+age_filtered_df = filter_by_age(dataframe, selected_ages)
 
 
 race_counts = age_filtered_df['race'].value_counts().reset_index()
