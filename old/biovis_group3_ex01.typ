@@ -393,7 +393,20 @@ Interestingly, increasing the dosage of rosiglitazone ('Up') is associated with 
   These findings should be interpreted with caution. Other factors my influence readmission rates and medication changes beyond the scope of this analysis.
 ]
 
+
+
 #pagebreak()
+== Data Transformations
+This section contains some excerpts of data transformations used to create the plots in the sections above:
+- `df.groupby('race')['readmitted'].value_counts(normalize=True).unstack()`
+- `small_vals = vc[vc / total < pct].index`
+- `B_vals = sorted(pd.Index(ab[B]).union(bc[B]).unique().tolist())`
+- `b_idx = {v: b_off + i for i, v in enumerate(B_vals)}`
+- `all_idx = pd.MultiIndex.from_product([cats, [1,2,3]], names=["category","bucket"])`
+- `(df["readmitted"].astype(str).str.strip().str.lower() != "no").astype(int)`
+- `med_comp_df[med_comp_df['status'] == 'Prescribed'].sort_values('readmission_rate', ascending=False)`
+
+
 
 = Summary
 
