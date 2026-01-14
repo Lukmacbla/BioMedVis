@@ -54,11 +54,33 @@ race_counts = age_filtered_df['race'].value_counts().reset_index()
 filtered_df = age_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
 race_counts.columns = ['race', 'count']  # rename columns for Altair
 
-tab1, tab2 = st.tabs(["Medication Strategy", "Distribution"])
+
+
+min_cooccurrence = st.sidebar.slider(
+    "Minimum co-occurrence",
+    min_value=10,
+    max_value=500,
+    value=50,
+    step=10
+)
+readmission_type = st.sidebar.radio(
+    "Readmission definition",
+    ["Any", "<30 days only"]
+)
+size_mode = st.sidebar.radio(
+    "Node size represents",
+    ["Medication frequency", "Readmission risk"]
+)
+
+
+
+
+
+tab1, tab2 = st.tabs(["Medication Strategy", "Medication Distribution"])
 
 with tab1:
-    st.header("A cat")
-    st.image("https://static.streamlit.io/examples/cat.jpg", width=200)
+    st.header("Medication Strategy")
+    st.altair_chart(getOverviewPlots(filtered_df, readmission_type))
 with tab2:
     st.header("Medication Distribution")
 
@@ -94,21 +116,7 @@ def filtered_table(event):
 
 
 #filtered = filtered_table(event)
-min_cooccurrence = st.sidebar.slider(
-    "Minimum co-occurrence",
-    min_value=10,
-    max_value=500,
-    value=50,
-    step=10
-)
-readmission_type = st.sidebar.radio(
-    "Readmission definition",
-    ["Any", "<30 days only"]
-)
-size_mode = st.sidebar.radio(
-    "Node size represents",
-    ["Medication frequency", "Readmission risk"]
-)
+
 G = build_graph(min_cooccurrence, readmission_type)
 
 net = render_graph(G, size_mode)
@@ -121,5 +129,3 @@ with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
 race_count = get_barchart(race_counts)
 
 st.altair_chart(race_count)
-
-st.altair_chart(getOverviewPlots(filtered_df, readmission_type))

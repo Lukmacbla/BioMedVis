@@ -35,13 +35,16 @@ def getOverviewPlots(df, readmission_type):
 
 
     chart = (alt.Chart(heatmap_df).
-             mark_circle(size=800).
+             mark_circle().
              encode(
-        y=alt.Y('medication:O', title='Medication'),
+        y=alt.Y('medication:O', title='Medication', axis=alt.Axis(labelLimit=200)),
         x=alt.X('status:O', title='Status', sort=['No', 'Up', 'Steady', 'Down']),
-        size=alt.Size('count:Q', scale=alt.Scale(range=[50, 800])),
-        color=alt.Color('percent:Q', scale=alt.Scale(scheme='darkred')),
-        tooltip=['medication', 'status', 'count']
+        #size=alt.Size('count:Q', scale=alt.Scale(range=[50, 800])),
+        size=alt.condition(alt.datum.count > 1, alt.Size('count:Q', scale=alt.Scale(type='sqrt', range=[150, 900])), alt.value(0)), # TODO: decide whether linear or sqrt looks better
+        #size=alt.condition(alt.datum.count > 1, alt.Size('count:Q', scale=alt.Scale(type='linear', range=[150, 900])), alt.value(0)),
+        color=alt.Color('percent:Q', title='Readmission rate (%)', scale=alt.Scale(scheme='darkred', reverse=True)),
+        #color=alt.condition(alt.datum.status == 'No',alt.value('lightblue'),alt.Color('percent:Q', scale=alt.Scale(scheme='darkred', reverse=True, domain=[0, 100]), title='Readmission rate (%)')),
+        tooltip=['medication', 'status', 'count', 'percent:N']
     ).
              properties(
         title='Medication Status Distribution: Size & Color by Count'
