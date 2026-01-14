@@ -22,18 +22,12 @@ def getOverviewPlots(df, readmission_type):
     for med in meds:
         for status in statuses:
             count = (df[med] == status).sum()
-            data.append({'medication': med, 'status': status, 'count': count})
-
-
-    for med in meds:
-        count_meds = (df[med] != 'No').sum()
-        #count_readmissions = (df[med] == read).sum()
-        count_med_and_readmit = ((df[med] != 'No') & (df['readmitted'].isin(readmit)))
-        if count_meds > 0:
-            percent = (count_med_and_readmit / count_meds) * 100
-        else:
-            percent = 0.0
-        data.append({'medication': med, 'percent': percent})
+            count_med_and_readmit = ((df[med] == status) & readmit).sum()
+            if (count > 0) & (status != 'No'):
+                percent = (count_med_and_readmit / count) * 100
+            else:
+                percent = 0.0
+            data.append({'medication': med, 'status': status, 'count': count, 'percent': percent})
     heatmap_df = pd.DataFrame(data)
 
 
@@ -45,8 +39,8 @@ def getOverviewPlots(df, readmission_type):
              encode(
         y=alt.Y('medication:O', title='Medication'),
         x=alt.X('status:O', title='Status', sort=['No', 'Up', 'Steady', 'Down']),
-        size=alt.Size('count:Q', scale=alt.Scale(range=[10, 1200])),
-        color=alt.Color('percent:Q', scale=alt.Scale(scheme='rainbow')),
+        size=alt.Size('count:Q', scale=alt.Scale(range=[50, 800])),
+        color=alt.Color('percent:Q', scale=alt.Scale(scheme='darkred')),
         tooltip=['medication', 'status', 'count']
     ).
              properties(
