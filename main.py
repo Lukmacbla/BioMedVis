@@ -1,8 +1,12 @@
+import tempfile
+
+from pyvis.network import Network
 import streamlit as st
 import pandas as pd
 import altair as alt
 
 from basicplots import get_barchart
+from cluster import render_graph, build_graph
 from filters import load_data, filter_by_age
 
 # Running the Streamlit app
@@ -86,6 +90,28 @@ def filtered_table(event):
 
 
 #filtered = filtered_table(event)
+min_cooccurrence = st.sidebar.slider(
+    "Minimum co-occurrence",
+    min_value=10,
+    max_value=500,
+    value=50,
+    step=10
+)
+readmission_type = st.sidebar.radio(
+    "Readmission definition",
+    ["Any", "<30 days only"]
+)
+size_mode = st.sidebar.radio(
+    "Node size represents",
+    ["Medication frequency", "Readmission risk"]
+)
+G = build_graph(min_cooccurrence, readmission_type)
+
+net = render_graph(G, size_mode)
+
+with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+    net.save_graph(tmp.name)
+    st.components.v1.html(open(tmp.name).read(), height=800)
 
 # Add graphs
 race_count = get_barchart(race_counts)
