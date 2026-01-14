@@ -4,6 +4,7 @@ import altair as alt
 
 from basicplots import get_barchart
 from filters import load_data, filter_by_age
+from upset import getUpsetPlot
 from overviewPlots import getOverviewPlots
 
 # Running the Streamlit app
@@ -23,16 +24,6 @@ st.markdown("Use this Streamlit app to make your own scatterplot about penguins!
 
 dataframe = load_data()
 # st.dataframe(penguins)
-import streamlit as st
-
-tab1, tab2 = st.tabs(["Medication Strategy", "Distribution"])
-
-with tab1:
-    st.header("A cat")
-    st.image("https://static.streamlit.io/examples/cat.jpg", width=200)
-with tab2:
-    st.header("A dog")
-    st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
 
 
 # -------------------------------
@@ -58,9 +49,20 @@ age_filtered_df = filter_by_age(dataframe, selected_ages)
 race_counts = age_filtered_df['race'].value_counts().reset_index()
 filtered_df = age_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
 race_counts.columns = ['race', 'count']  # rename columns for Altair
-# Create a bar chart
 
-# col2.write(event)
+tab1, tab2 = st.tabs(["Medication Strategy", "Distribution"])
+
+with tab1:
+    st.header("A cat")
+    st.image("https://static.streamlit.io/examples/cat.jpg", width=200)
+with tab2:
+    st.header("Medication Distribution")
+
+    upset_plot = getUpsetPlot(age_filtered_df)
+
+    # event = st.altair_chart(upset_plot, use_container_width=False, on_select="rerun")
+    event = st.altair_chart(upset_plot)
+
 
 # -------------------------------
 # 4) Cross-filter on the bar chart
