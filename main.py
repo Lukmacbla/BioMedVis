@@ -8,6 +8,8 @@ import altair as alt
 from basicplots import get_barchart
 from cluster import render_graph, build_graph
 from filters import load_data, filter_by_age
+from upset import getUpsetPlot
+from overviewPlots import getOverviewPlots
 
 # Running the Streamlit app
 # streamlit run app.py
@@ -26,16 +28,6 @@ st.markdown("Use this Streamlit app to make your own scatterplot about penguins!
 
 dataframe = load_data()
 # st.dataframe(penguins)
-import streamlit as st
-
-tab1, tab2 = st.tabs(["Medication Strategy", "Distribution"])
-
-with tab1:
-    st.header("A cat")
-    st.image("https://static.streamlit.io/examples/cat.jpg", width=200)
-with tab2:
-    st.header("A dog")
-    st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
 
 
 # -------------------------------
@@ -59,10 +51,22 @@ age_filtered_df = filter_by_age(dataframe, selected_ages)
 
 
 race_counts = age_filtered_df['race'].value_counts().reset_index()
+filtered_df = age_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
 race_counts.columns = ['race', 'count']  # rename columns for Altair
-# Create a bar chart
 
-# col2.write(event)
+tab1, tab2 = st.tabs(["Medication Strategy", "Distribution"])
+
+with tab1:
+    st.header("A cat")
+    st.image("https://static.streamlit.io/examples/cat.jpg", width=200)
+with tab2:
+    st.header("Medication Distribution")
+
+    upset_plot = getUpsetPlot(age_filtered_df)
+
+    # event = st.altair_chart(upset_plot, use_container_width=False, on_select="rerun")
+    event = st.altair_chart(upset_plot)
+
 
 # -------------------------------
 # 4) Cross-filter on the bar chart
@@ -117,3 +121,30 @@ with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
 race_count = get_barchart(race_counts)
 
 st.altair_chart(race_count)
+
+df = filtered_df
+meds = ['metformin', 'repaglinide', 'nateglinide', 'chlorpropamide', 'glimepiride']
+statuses = ['Up', 'Down', 'No', 'Steady']
+data = []
+for med in meds:
+    for status in statuses:
+        count = (df[med] == status).sum()
+        data.append({'medication': med, 'status': status, 'count': count})
+heatmap_df = pd.DataFrame(data)
+
+if 'heatmap_df' in locals():
+    chart = (alt.Chart(heatmap_df).
+             mark_circle(size=800).
+             encode(
+        y=alt.Y('medication:O', title='Medication'),
+        x=alt.X('status:O', title='Status', sort=['No', 'Up', 'Steady', 'Down']),
+        size=alt.Size('count:Q', scale=alt.Scale(range=[10, 1200])),
+        color=alt.Color('count:Q', scale=alt.Scale(scheme='rainbow')),
+        tooltip=['medication', 'status', 'count']
+    ).
+             properties(
+        title='Medication Status Distribution: Size & Color by Count'
+    ).
+             interactive()
+             )
+    st.altair_chart(chart, use_container_width=True)
