@@ -4,6 +4,7 @@ import altair as alt
 
 from basicplots import get_barchart
 from filters import load_data, filter_by_age
+from overviewPlots import getOverviewPlots
 
 # Running the Streamlit app
 # streamlit run app.py
@@ -55,6 +56,7 @@ age_filtered_df = filter_by_age(dataframe, selected_ages)
 
 
 race_counts = age_filtered_df['race'].value_counts().reset_index()
+filtered_df = age_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
 race_counts.columns = ['race', 'count']  # rename columns for Altair
 # Create a bar chart
 
@@ -91,3 +93,30 @@ def filtered_table(event):
 race_count = get_barchart(race_counts)
 
 st.altair_chart(race_count)
+
+df = filtered_df
+meds = ['metformin', 'repaglinide', 'nateglinide', 'chlorpropamide', 'glimepiride']
+statuses = ['Up', 'Down', 'No', 'Steady']
+data = []
+for med in meds:
+    for status in statuses:
+        count = (df[med] == status).sum()
+        data.append({'medication': med, 'status': status, 'count': count})
+heatmap_df = pd.DataFrame(data)
+
+if 'heatmap_df' in locals():
+    chart = (alt.Chart(heatmap_df).
+             mark_circle(size=800).
+             encode(
+        y=alt.Y('medication:O', title='Medication'),
+        x=alt.X('status:O', title='Status', sort=['No', 'Up', 'Steady', 'Down']),
+        size=alt.Size('count:Q', scale=alt.Scale(range=[10, 1200])),
+        color=alt.Color('count:Q', scale=alt.Scale(scheme='rainbow')),
+        tooltip=['medication', 'status', 'count']
+    ).
+             properties(
+        title='Medication Status Distribution: Size & Color by Count'
+    ).
+             interactive()
+             )
+    st.altair_chart(chart, use_container_width=True)
