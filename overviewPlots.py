@@ -42,7 +42,7 @@ def getOverviewPlots(df, readmission_type):
         #size=alt.Size('count:Q', scale=alt.Scale(range=[50, 800])),
         size=alt.condition(alt.datum.count > 1, alt.Size('count:Q', scale=alt.Scale(type='sqrt', range=[150, 900])), alt.value(0)), # TODO: decide whether linear or sqrt looks better
         #size=alt.condition(alt.datum.count > 1, alt.Size('count:Q', scale=alt.Scale(type='linear', range=[150, 900])), alt.value(0)),
-        color=alt.Color('percent:Q', title='Readmission rate (%)', scale=alt.Scale(scheme='darkred', reverse=True)),
+        color=alt.Color('percent:Q', title='Readmission rate (%)', scale=alt.Scale(scheme='darkred', reverse=True, domain=[0, 100])),
         #color=alt.condition(alt.datum.status == 'No',alt.value('lightblue'),alt.Color('percent:Q', scale=alt.Scale(scheme='darkred', reverse=True, domain=[0, 100]), title='Readmission rate (%)')),
         tooltip=['medication', 'status', 'count', 'percent:N']
     ).

@@ -5,7 +5,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
-from basicplots import get_barchart
+from basicplots import get_barchart, get_piechart
 from cluster import render_graph, build_graph
 from filters import load_data, filter_by_age
 from upset import getUpsetPlot
@@ -129,3 +129,5 @@ with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
 race_count = get_barchart(race_counts)
 
 st.altair_chart(race_count)
+
+st.altair_chart(get_piechart(filtered_df, readmission_type))
