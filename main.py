@@ -5,6 +5,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
+import matplotlib.pyplot as plt
 from basicplots import get_barchart, get_piechart
 from cluster import render_graph, build_graph
 from filters import load_data, filter_by_age
@@ -76,18 +77,7 @@ size_mode = st.sidebar.radio(
 
 
 
-tab1, tab2 = st.tabs(["Medication Strategy", "Medication Distribution"])
 
-with tab1:
-    st.header("Medication Strategy")
-    st.altair_chart(getOverviewPlots(filtered_df, readmission_type))
-with tab2:
-    st.header("Medication Distribution")
-
-    upset_plot = getUpsetPlot(age_filtered_df)
-
-    # event = st.altair_chart(upset_plot, use_container_width=False, on_select="rerun")
-    event = st.altair_chart(upset_plot)
 
 
 # -------------------------------
@@ -117,17 +107,55 @@ def filtered_table(event):
 
 #filtered = filtered_table(event)
 
-G = build_graph(min_cooccurrence, readmission_type)
-
-net = render_graph(G, size_mode)
-
-with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-    net.save_graph(tmp.name)
-    st.components.v1.html(open(tmp.name).read(), height=800)
 
 # Add graphs
 race_count = get_barchart(race_counts)
 
-st.altair_chart(race_count)
 
-st.altair_chart(get_piechart(filtered_df, readmission_type))
+
+
+
+
+# overview plot
+tab1, tab2 = st.tabs(["Medication Strategy", "Medication Distribution"])
+
+with tab1:
+    st.header("Medication Strategy")
+    st.altair_chart(getOverviewPlots(filtered_df, readmission_type))
+with tab2:
+    st.header("Medication Distribution")
+
+    upset_plot = getUpsetPlot(age_filtered_df)
+
+    # event = st.altair_chart(upset_plot, use_container_width=False, on_select="rerun")
+    event = st.altair_chart(upset_plot)
+# medication chart
+
+
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.header("Graph 1")
+    fig1, ax1 = plt.subplots()
+    st.altair_chart(get_piechart(filtered_df, readmission_type))
+    ax1.plot([1, 2, 3], [4, 5, 6])
+    st.pyplot(fig1)
+    st.altair_chart(race_count)
+
+with col2:
+    G = build_graph(min_cooccurrence, readmission_type)
+
+    net = render_graph(G, size_mode)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+        net.save_graph(tmp.name)
+
+        st.header("Graph 2")
+        fig2, ax2 = plt.subplots()
+        ax2.bar([1, 2, 3], [6, 4, 5])
+        st.components.v1.html(open(tmp.name).read(), height=800)
+        st.pyplot(fig2)
+
+
+# Basic plots

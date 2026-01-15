@@ -37,7 +37,7 @@ def build_graph(min_cooccurrence, readmission_type):
 
     med_freq = X.sum()
     med_readmit = {
-        med: float(readmit[X[med] == 1].mean())    # ensure float
+        med: float(readmit[X[med] == 1].mean())
         for med in med_cols
     }
 
@@ -46,7 +46,6 @@ def build_graph(min_cooccurrence, readmission_type):
     G = nx.Graph()
 
     for med in med_cols:
-        # cast to int and float:
         freq = int(med_freq[med])
         readmit_value = float(med_readmit[med])
         if freq > 0:
@@ -59,7 +58,6 @@ def build_graph(min_cooccurrence, readmission_type):
     for i, m1 in enumerate(med_cols):
         for j, m2 in enumerate(med_cols):
             if i < j and co_matrix[i, j] >= min_cooccurrence:
-                # cast everything to float!
                 value = float(co_matrix[i, j]) / float(min(freq, int(med_freq[m2])))
                 G.add_edge(m1, m2, value=value)
 
