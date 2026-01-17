@@ -8,7 +8,7 @@ import altair as alt
 import matplotlib.pyplot as plt
 from basicplots import get_barchart, get_piechart
 from cluster import render_graph, build_graph
-from filters import load_data, filter_by_age
+from filters import load_data, filter_by_age, filter_by_weight
 from upset import getUpsetPlot
 from overviewPlots import getOverviewPlots
 
@@ -16,9 +16,9 @@ from overviewPlots import getOverviewPlots
 # streamlit run app.py
 
 # Config the settings of the page
-st.set_page_config(page_title="Streamlit Tutorial", page_icon="📊", layout="wide")
-st.title("🐧 Palmer's Penguins")
-st.markdown("Use this Streamlit app to make your own scatterplot about penguins!")
+st.set_page_config(page_title="Diabetic Medication Analysis Dashboard", page_icon="📊", layout="wide")
+st.title("Diabetic Medication Analysis Dashboard")
+st.markdown("Analyze medication strategies and their impact on clinical readmission rates.")
 
 
 # -------------------------------
@@ -34,12 +34,26 @@ dataframe = load_data()
 # -------------------------------
 # 2) Sidebar controls
 # -------------------------------
-st.sidebar.title("Selectors")
-selected_ages = st.sidebar.multiselect(
-    "age",
-    dataframe["age"].unique(),
-    default=list(set(dataframe['age']))
+st.sidebar.title("Filter Options")
+
+st.sidebar.subheader("Age")
+age_range = st.sidebar.slider(
+    "Patient Age",
+    min_value=0,
+    max_value=100,
+    value=(0, 100),
+    step=10
 )
+
+st.sidebar.subheader("Weight")
+weight_range = st.sidebar.slider(
+    "Patient Weight",
+    min_value=0,
+    max_value=200,
+    value=(0, 200),
+    step=25
+)
+include_unknown_weight = st.sidebar.checkbox("Include unknown weight", value=True)
 
 # -------------------------------
 # 3) Scatterplot with brush selection
@@ -48,11 +62,12 @@ selected_ages = st.sidebar.multiselect(
 
 # Plot the altair chart on Streamlit app
 
-age_filtered_df = filter_by_age(dataframe, selected_ages)
+age_filtered_df = filter_by_age(dataframe, age_range)
+weight_filtered_df = filter_by_weight(dataframe, weight_range, include_unknown_weight)
 
 
-race_counts = age_filtered_df['race'].value_counts().reset_index()
-filtered_df = age_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
+race_counts = weight_filtered_df['race'].value_counts().reset_index()
+filtered_df = weight_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
 race_counts.columns = ['race', 'count']  # rename columns for Altair
 
 
