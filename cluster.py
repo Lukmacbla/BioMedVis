@@ -5,43 +5,24 @@ from pyvis.network import Network
 import streamlit as st
 import tempfile
 
-@st.cache_data
-def load_data():
-    temp_df = pd.read_csv("data/diabetic_data.csv")
 
-
-    med_cols = [
-        'metformin', 'repaglinide', 'nateglinide', 'chlorpropamide',
-        'glimepiride', 'acetohexamide', 'glipizide', 'glyburide',
-        'tolbutamide', 'pioglitazone', 'rosiglitazone', 'acarbose',
-        'miglitol', 'troglitazone', 'tolazamide', 'examide',
-        'citoglipton', 'insulin', 'glyburide-metformin',
-        'glipizide-metformin', 'glimepiride-pioglitazone',
-        'metformin-rosiglitazone', 'metformin-pioglitazone'
-    ]
-
-    temp_X = (temp_df[med_cols] != "No").astype(int)
-    temp_df["readmit_bin"] = temp_df["readmitted"].isin([">30", "<30"]).astype(int)
-
-    return temp_df, temp_X, med_cols
-
-df, X, med_cols = load_data()
 
 @st.cache_data
-def build_graph(min_cooccurrence, readmission_type):
+def build_graph(df, min_cooccurrence, readmission_type, med_cols):
+    taken_medication = (df[med_cols] != "No").astype(int)
     # Readmission definition
     if readmission_type == "Any":
         readmit = df["readmitted"].isin([">30", "<30"]).astype(int)
     else:
         readmit = (df["readmitted"] == "<30").astype(int)
 
-    med_freq = X.sum()
+    med_freq = taken_medication.sum()
     med_readmit = {
-        med: float(readmit[X[med] == 1].mean())
+        med: float(readmit[taken_medication[med] == 1].mean())
         for med in med_cols
     }
 
-    co_matrix = (X.T @ X).to_numpy()
+    co_matrix = (taken_medication.T @ taken_medication).to_numpy()
 
     G = nx.Graph()
 

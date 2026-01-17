@@ -1,10 +1,8 @@
 import pandas as pd
 import altair as alt
 
-from globals import primary_color 
+def getUpsetPlot(raw_data, med_cols):
 
-def getUpsetPlot(raw_data):
-  med_cols = ['metformin', 'repaglinide', 'glimepiride', 'glipizide', 'insulin']
 
   df = raw_data.copy()
   for col in med_cols:

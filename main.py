@@ -27,7 +27,7 @@ st.markdown("Analyze medication strategies and their impact on clinical readmiss
 
 
 
-dataframe = load_data()
+dataframe, medication_column_names_filtered = load_data()
 # st.dataframe(penguins)
 
 
@@ -56,6 +56,13 @@ weight_range = weight_container.slider(
     step=25
 )
 include_unknown_weight = weight_container.checkbox("Include unknown", value=True)
+
+selected_medications = st.multiselect(
+    "SelectMedication",
+    list(medication_column_names_filtered),
+    default=medication_column_names_filtered
+)
+
 
 # -------------------------------
 # 3) Scatterplot with brush selection
@@ -138,11 +145,11 @@ tab1, tab2 = st.tabs(["Medication Strategy", "Medication Distribution"])
 
 with tab1:
     st.header("Medication Strategy")
-    st.altair_chart(getOverviewPlots(filtered_df, readmission_type))
+    st.altair_chart(getOverviewPlots(filtered_df, readmission_type, selected_medications))
 with tab2:
     st.header("Medication Distribution")
 
-    upset_plot = getUpsetPlot(age_filtered_df)
+    upset_plot = getUpsetPlot(age_filtered_df, selected_medications)
 
     # event = st.altair_chart(upset_plot, use_container_width=False, on_select="rerun")
     event = st.altair_chart(upset_plot)
@@ -153,27 +160,20 @@ with tab2:
 col1, col2 = st.columns(2)
 
 with col1:
-    st.header("Graph 1")
     fig1, ax1 = plt.subplots()
-    st.altair_chart(get_piechart(filtered_df, readmission_type))
-    ax1.plot([1, 2, 3], [4, 5, 6])
-    st.pyplot(fig1)
+    st.altair_chart(get_piechart(filtered_df, readmission_type)) # TODO medication filter ?
     st.altair_chart(race_count)
 
 
 with col2:
-    G = build_graph(min_cooccurrence, readmission_type)
+    G = build_graph(filtered_df, min_cooccurrence, readmission_type, selected_medications)
 
     net = render_graph(G, size_mode)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
 
-        st.header("Graph 2")
-        fig2, ax2 = plt.subplots()
-        ax2.bar([1, 2, 3], [6, 4, 5])
         st.components.v1.html(open(tmp.name).read(), height=800)
-        st.pyplot(fig2)
-    st.altair_chart(getStackedBarChart(filtered_df, readmission_type))
+    st.altair_chart(getStackedBarChart(filtered_df, readmission_type)) # TODO medication filter ?
 
 # Basic plots
