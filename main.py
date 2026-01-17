@@ -97,6 +97,14 @@ def render_main_view():
         st.warning("No medications selected. Please select at least one medication.")
         st.stop()
         return
+    
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric("Total Encounters", f"{filtered_df.shape[0]}", border=True)
+
+    total_readmission_rate = (filtered_df['readmitted'] != 'NO').mean() * 100
+
+    col2.metric("Overall Readmission Rate", f"{total_readmission_rate:.2f}%", border=True)
         
     race_count = get_barchart(race_counts)
 
