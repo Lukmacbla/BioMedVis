@@ -1,6 +1,9 @@
 import altair as alt
 import pandas as pd
 
+from globals import primary_color
+from utils import color_utils
+
 
 def get_barchart(race_counts):
     return alt.Chart(race_counts).mark_bar().encode(
@@ -12,7 +15,11 @@ def get_barchart(race_counts):
     )
 
 def get_piechart(df, readmission_type):
-
+    
+    
+    color_full = primary_color
+    color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
+    color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
 
     if readmission_type == "Any":
         count_no = (df['readmitted'] == 'NO').sum()
@@ -30,7 +37,7 @@ def get_piechart(df, readmission_type):
                 mark_arc()).
                 encode(
             theta=alt.Theta("count:Q", stack=True),
-            color=alt.Color("readmitted:N", title="Readmission", scale=alt.Scale(domain=["No", "<30", ">30"], range=["orange", "lightblue", "darkblue"])),
+            color=alt.Color("readmitted:N", title="Readmission", scale=alt.Scale(domain=["No", ">30", "<30"], range=[color_light, color_full, color_medium])),
             tooltip=["readmitted", "count"]
                 )).
         properties(
@@ -54,7 +61,7 @@ def get_piechart(df, readmission_type):
                   mark_arc()).
         encode(
             theta=alt.Theta("count:Q", stack=True),
-            color=alt.Color("readmitted:N", title="Readmission", scale=alt.Scale(domain=["No", "<30"], range=["orange", "lightblue"])),
+            color=alt.Color("readmitted:N", title="Readmission", scale=alt.Scale(domain=["No", "<30"], range=[color_light, color_full])),
             tooltip=["readmitted", "count"]
         )).
         properties(
