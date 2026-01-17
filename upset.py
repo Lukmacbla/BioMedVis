@@ -1,5 +1,8 @@
 import pandas as pd
 import altair as alt
+from globals import primary_color
+
+height_per_medication = 30
 
 def getUpsetPlot(raw_data, med_cols):
 
@@ -32,7 +35,7 @@ def getUpsetPlot(raw_data, med_cols):
       selection
   ).properties(
       width=150,
-      height=275,
+      height=med_cols.__len__() * height_per_medication,
   )
 
   spacer = alt.Chart(pd.DataFrame({'x': [0]})).mark_text().encode().properties(
@@ -68,7 +71,7 @@ def getUpsetPlot(raw_data, med_cols):
       opacity=alt.condition(selection, alt.value(1), alt.value(0.2))
   ).properties(
       width=400,
-      height=275
+      height=med_cols.__len__() * height_per_medication
   )
 
   matrix_lines = alt.Chart(matrix_df).mark_line(color='lightgray').encode(

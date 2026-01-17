@@ -22,13 +22,10 @@ st.markdown("Analyze medication strategies and their impact on clinical readmiss
 
 
 # -------------------------------
-# 1) Data loading and cached
+# 1) Data loading and caching
 # -------------------------------
 
-
-
 dataframe, medication_column_names_filtered = load_data()
-# st.dataframe(penguins)
 
 
 # -------------------------------
@@ -57,29 +54,11 @@ weight_range = weight_container.slider(
 )
 include_unknown_weight = weight_container.checkbox("Include unknown", value=True)
 
-selected_medications = st.multiselect(
-    "SelectMedication",
-    list(medication_column_names_filtered),
-    default=medication_column_names_filtered
-)
-
-
-# -------------------------------
-# 3) Scatterplot with brush selection
-# -------------------------------
-# Create a simple scatterplot with brush selection
-
-# Plot the altair chart on Streamlit app
-
 age_filtered_df = filter_by_age(dataframe, age_range)
 weight_filtered_df = filter_by_weight(age_filtered_df, weight_range, include_unknown_weight)
-
-
 race_counts = weight_filtered_df['race'].value_counts().reset_index()
 filtered_df = weight_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
 race_counts.columns = ['race', 'count']  # rename columns for Altair
-
-
 
 min_cooccurrence = st.sidebar.slider(
     "Minimum co-occurrence",
@@ -97,83 +76,64 @@ size_mode = st.sidebar.radio(
     ["Medication frequency", "Readmission risk"]
 )
 
-
-
-
-
-
-
-
 # -------------------------------
-# 4) Cross-filter on the bar chart
+# 3) Main Graph Views
 # -------------------------------
-# Filter the dataset after selection
-def filtered_table(event):
-    selection = event['selection']['brush']
+def render_main_view():
+    col_left, col_right = st.columns(2)
+    with col_left:
+        selected_medications = st.multiselect(
+            "Select Medications",
+            list(medication_column_names_filtered),
+            default=['insulin', 'metformin', 'glipizide', 'glyburide', 'rosiglitazone']
+        )
 
-    # 0. Prevent an error if selection object is None or empty.
-    if selection == dict():
-        return dataframe
+    if medication_column_names_filtered.__len__() == 0:
+        st.warning("No medications available with more than 100 patients. Please adjust the medication selection.")
+        st.stop()
+        return
+    
+    if selected_medications.__len__() == 0:
+        st.warning("No medications selected. Please select at least one medication.")
+        st.stop()
+        return
+        
+    race_count = get_barchart(race_counts)
 
-    # 1. Create a query string to filter the data
-    query = ' & '.join(
-        f'{crange[0]} <= `{col}` <= {crange[1]}'
-        for col, crange in selection.items())
+    # overview plot
+    tab1, tab2 = st.tabs(["Medication Strategy", "Medication Distribution"])
 
-    df = dataframe.query(query)
+    with tab1:
+        st.header("Medication Strategy")
+        st.altair_chart(getOverviewPlots(filtered_df, readmission_type, selected_medications))
+    with tab2:
+        st.header("Medication Distribution")
 
-    # 2. Filter the penguin data frame from the query
-    #df = penguins[penguins['species'].isin(species)].query(query)
+        upset_plot = getUpsetPlot(age_filtered_df, selected_medications)
 
-    # 3. Add the DataFrame pane that render pandas object
-    return df
-
-
-#filtered = filtered_table(event)
-
-
-# Add graphs
-race_count = get_barchart(race_counts)
-
-
-
-
-
-
-# overview plot
-tab1, tab2 = st.tabs(["Medication Strategy", "Medication Distribution"])
-
-with tab1:
-    st.header("Medication Strategy")
-    st.altair_chart(getOverviewPlots(filtered_df, readmission_type, selected_medications))
-with tab2:
-    st.header("Medication Distribution")
-
-    upset_plot = getUpsetPlot(age_filtered_df, selected_medications)
-
-    # event = st.altair_chart(upset_plot, use_container_width=False, on_select="rerun")
-    event = st.altair_chart(upset_plot)
-# medication chart
+        # event = st.altair_chart(upset_plot, use_container_width=False, on_select="rerun")
+        event = st.altair_chart(upset_plot)
+    # medication chart
 
 
 
-col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
 
-with col1:
-    fig1, ax1 = plt.subplots()
-    st.altair_chart(get_piechart(filtered_df, readmission_type)) # TODO medication filter ?
-    st.altair_chart(race_count)
+    with col1:
+        fig1, ax1 = plt.subplots()
+        st.altair_chart(get_piechart(filtered_df, readmission_type)) # TODO medication filter ?
+        st.altair_chart(race_count)
 
 
-with col2:
-    G = build_graph(filtered_df, min_cooccurrence, readmission_type, selected_medications)
+    with col2:
+        G = build_graph(filtered_df, min_cooccurrence, readmission_type, selected_medications)
 
-    net = render_graph(G, size_mode)
+        net = render_graph(G, size_mode)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-        net.save_graph(tmp.name)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+            net.save_graph(tmp.name)
 
-        st.components.v1.html(open(tmp.name).read(), height=800)
-    st.altair_chart(getStackedBarChart(filtered_df, readmission_type)) # TODO medication filter ?
+            st.components.v1.html(open(tmp.name).read(), height=800)
+        st.altair_chart(getStackedBarChart(filtered_df, readmission_type)) # TODO medication filter ?
 
-# Basic plots
+render_main_view()
