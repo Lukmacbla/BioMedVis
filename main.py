@@ -36,8 +36,9 @@ dataframe = load_data()
 # -------------------------------
 st.sidebar.title("Filter Options")
 
-st.sidebar.subheader("Age")
-age_range = st.sidebar.slider(
+st.sidebar.subheader("Patient Demographics")
+age_container = st.sidebar.container(border=True)
+age_range = age_container.slider(
     "Patient Age",
     min_value=0,
     max_value=100,
@@ -45,15 +46,16 @@ age_range = st.sidebar.slider(
     step=10
 )
 
-st.sidebar.subheader("Weight")
-weight_range = st.sidebar.slider(
+weight_container = st.sidebar.container(border=True)
+
+weight_range = weight_container.slider(
     "Patient Weight",
     min_value=0,
     max_value=200,
     value=(0, 200),
     step=25
 )
-include_unknown_weight = st.sidebar.checkbox("Include unknown weight", value=True)
+include_unknown_weight = weight_container.checkbox("Include unknown", value=True)
 
 # -------------------------------
 # 3) Scatterplot with brush selection
@@ -63,7 +65,7 @@ include_unknown_weight = st.sidebar.checkbox("Include unknown weight", value=Tru
 # Plot the altair chart on Streamlit app
 
 age_filtered_df = filter_by_age(dataframe, age_range)
-weight_filtered_df = filter_by_weight(dataframe, weight_range, include_unknown_weight)
+weight_filtered_df = filter_by_weight(age_filtered_df, weight_range, include_unknown_weight)
 
 
 race_counts = weight_filtered_df['race'].value_counts().reset_index()
