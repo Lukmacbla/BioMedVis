@@ -1,6 +1,8 @@
 import pandas as pd
 import altair as alt
 
+from globals import primary_color 
+
 def getUpsetPlot(raw_data):
   med_cols = ['metformin', 'repaglinide', 'glimepiride', 'glipizide', 'insulin']
 
@@ -26,7 +28,7 @@ def getUpsetPlot(raw_data):
   row_bars = alt.Chart(total_counts).mark_bar().encode(
       y=alt.Y('medication', title="Medication", sort='-x'),
       x=alt.X('count', title="Total Count", scale=alt.Scale(reverse=True)),
-      color=alt.condition(selection, alt.value('black'), alt.value('lightgray')),
+      color=alt.condition(selection, alt.value(primary_color), alt.value('lightgray')),
       opacity=alt.condition(selection, alt.value(1), alt.value(0.6))
   ).add_params(
       selection
@@ -53,7 +55,7 @@ def getUpsetPlot(raw_data):
   intersection_bars_combined = alt.Chart(intersection_with_meds).mark_bar().encode(
       x=alt.X('id:O', axis=None, sort=alt.EncodingSortField(field='count', order='descending')),
       y=alt.Y('count:Q', title=None, aggregate='max'),
-      color=alt.value('black'),
+      color=alt.value(primary_color),
       opacity=alt.condition(selection, alt.value(1.0), alt.value(0.2)),
       tooltip=[alt.Tooltip('count:Q', aggregate='max')]
   ).properties(
@@ -64,7 +66,7 @@ def getUpsetPlot(raw_data):
   matrix_dots = alt.Chart(matrix_df).mark_circle(size=100).encode(
       x=alt.X('id:O', axis=None, sort=alt.EncodingSortField(field='count', order='descending')),
       y=alt.Y('medication', title=None, axis=alt.Axis(labels=False, ticks=False), sort=alt.EncodingSortField(field='count', op='sum', order='descending')), # Sortierung angleichen an row_bars wenn möglich
-      color=alt.value('black'),
+      color=alt.value(primary_color),
       opacity=alt.condition(selection, alt.value(1), alt.value(0.2))
   ).properties(
       width=400,
