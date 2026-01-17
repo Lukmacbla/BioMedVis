@@ -1,8 +1,8 @@
 import pandas as pd
 import altair as alt
 
-def getUpsetPlot(raw_data):
-  med_cols = ['metformin', 'repaglinide', 'glimepiride', 'glipizide', 'insulin']
+def getUpsetPlot(raw_data, med_cols):
+
 
   df = raw_data.copy()
   for col in med_cols:

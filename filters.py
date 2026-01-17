@@ -5,8 +5,15 @@ import pandas as pd
 
 @st.cache_data
 def load_data():
-    return pd.read_csv("data/diabetic_data.csv")
 
+    df =  pd.read_csv("data/diabetic_data.csv")
+    medication_column_names = df.columns[24:47].tolist()
+    medication_column_names_filtered = []
+    for column_name in medication_column_names:
+        if df[df[column_name]!="No"].size > 100:
+            medication_column_names_filtered.append(column_name)
+
+    return df, medication_column_names_filtered
 
 def filter_by_age(df: pd.DataFrame, age_range: tuple):
     """
@@ -27,7 +34,8 @@ def filter_by_weight(df: pd.DataFrame, weight_range: tuple, include_unknown=True
     """
 
     min_weight, max_weight = weight_range
-    
+
+
     def is_in_range(weight_str):
         if weight_str == '?':
             return include_unknown
@@ -58,3 +66,4 @@ def filter_data(df: pd.DataFrame, selected_ages=None, selected_races=None, selec
         filtered = filtered[filtered["island"].isin(selected_islands)]
 
     return filtered
+

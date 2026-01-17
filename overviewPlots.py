@@ -2,16 +2,7 @@ import pandas as pd
 import altair as alt
 
 
-def getOverviewPlots(df, readmission_type):
-    meds = [
-        'metformin', 'repaglinide', 'nateglinide', 'chlorpropamide',
-        'glimepiride', 'acetohexamide', 'glipizide', 'glyburide',
-        'tolbutamide', 'pioglitazone', 'rosiglitazone', 'acarbose',
-        'miglitol', 'troglitazone', 'tolazamide', 'examide',
-        'citoglipton', 'insulin', 'glyburide-metformin',
-        'glipizide-metformin', 'glimepiride-pioglitazone',
-        'metformin-rosiglitazone', 'metformin-pioglitazone'
-    ]
+def getOverviewPlots(df, readmission_type, med_cols):
     statuses = ['Up', 'Down', 'No', 'Steady']
     if readmission_type == "Any":
         readmit = df["readmitted"].isin([">30", "<30"]).astype(int)
@@ -19,7 +10,7 @@ def getOverviewPlots(df, readmission_type):
         readmit = (df["readmitted"] == "<30").astype(int)
 
     data = []
-    for med in meds:
+    for med in med_cols:
         for status in statuses:
             count = (df[med] == status).sum()
             count_med_and_readmit = ((df[med] == status) & readmit).sum()
