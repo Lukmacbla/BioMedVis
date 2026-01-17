@@ -15,8 +15,6 @@ def get_barchart(race_counts):
     )
 
 def get_piechart(df, readmission_type):
-    
-    
     color_full = primary_color
     color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
     color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
@@ -27,24 +25,31 @@ def get_piechart(df, readmission_type):
         count_long = (df['readmitted'] == '>30').sum()
 
         readmit_counts = pd.DataFrame({
-            "readmitted": ["No", "<30", ">30"],
+            "readmitted": ["Never", "<30 days", ">30 days"],
             "count": [count_no, count_short, count_long]
         })
 
         # Create Altair chart
 
-        return (((alt.Chart(readmit_counts).
-                mark_arc()).
-                encode(
+        def map_readmitted_label(readmitted):
+            switch = {
+                'No': 'Never',
+                '<30': '<30 days',
+                '>30': '>30 days'
+            }
+            return switch.get(readmitted)
+
+        pie_chart = alt.Chart(readmit_counts).mark_arc().encode(
             theta=alt.Theta("count:Q", stack=True),
-            color=alt.Color("readmitted:N", title="Readmission", scale=alt.Scale(domain=["No", ">30", "<30"], range=[color_light, color_full, color_medium])),
-            tooltip=["readmitted", "count"]
-                )).
-        properties(
-        width=400,
-        height=400,
-        title="Readmission distribution"
-    ))
+            color=alt.Color("readmitted:N", title="Readmission", scale=alt.Scale(domain=["Never", ">30 days", "<30 days"], range=[color_light, color_medium, color_full])),
+            tooltip=[alt.Tooltip("readmitted:N", title="Readmission"), alt.Tooltip("count:Q", title="Encounters")]
+        ).properties(
+            width=400,
+            height=400,
+            title="Readmission distribution"
+        )
+
+        return pie_chart
 
     else:
         count_no = (df['readmitted'] == 'NO').sum()
