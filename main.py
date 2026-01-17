@@ -6,7 +6,7 @@ import pandas as pd
 import altair as alt
 
 import matplotlib.pyplot as plt
-from basicplots import get_barchart, get_piechart
+from basicplots import get_barchart, get_piechart, getStackedBarChart
 from cluster import render_graph, build_graph
 from filters import load_data, filter_by_age
 from upset import getUpsetPlot
@@ -143,6 +143,7 @@ with col1:
     st.pyplot(fig1)
     st.altair_chart(race_count)
 
+
 with col2:
     G = build_graph(min_cooccurrence, readmission_type)
 
@@ -156,6 +157,6 @@ with col2:
         ax2.bar([1, 2, 3], [6, 4, 5])
         st.components.v1.html(open(tmp.name).read(), height=800)
         st.pyplot(fig2)
-
+    st.altair_chart(getStackedBarChart(filtered_df, readmission_type))
 
 # Basic plots
