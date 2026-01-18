@@ -129,7 +129,7 @@ def render_main_view():
 
     with col1:
         fig1, ax1 = plt.subplots()
-        st.altair_chart(get_piechart(filtered_df, readmission_type)) # TODO medication filter ?
+        st.altair_chart(get_piechart(filtered_df, readmission_type, selected_medications)) # TODO medication filter ?
         st.altair_chart(race_count)
 
 

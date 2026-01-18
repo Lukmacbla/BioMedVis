@@ -14,15 +14,23 @@ def get_barchart(race_counts):
         title='Number of penguins per race'
     )
 
-def get_piechart(df, readmission_type):
+def get_piechart(df, readmission_type, med_cols):
+    map_dict = {"No": 0, "Up": 1, "Down": 1, "Steady": 1}
     color_full = primary_color
     color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
     color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
 
+    df_work = df.copy()
+    df_work[med_cols] = df[med_cols].replace("?", pd.NA)
+    df_work[med_cols] = df_work[med_cols].replace(map_dict)
+
+    mask_med_taken = df_work[med_cols].isin([1]).any(axis=1)
+    df_work = df_work[mask_med_taken]
+
     if readmission_type == "Any":
-        count_no = (df['readmitted'] == 'NO').sum()
-        count_short = (df['readmitted'] == '<30').sum()
-        count_long = (df['readmitted'] == '>30').sum()
+        count_no = (df_work['readmitted'] == 'NO').sum()
+        count_short = (df_work['readmitted'] == '<30').sum()
+        count_long = (df_work['readmitted'] == '>30').sum()
 
         readmit_counts = pd.DataFrame({
             "readmitted": ["Never", "<30 days", ">30 days"],
@@ -52,8 +60,8 @@ def get_piechart(df, readmission_type):
         return pie_chart
 
     else:
-        count_no = (df['readmitted'] == 'NO').sum()
-        count_short = (df['readmitted'] == '<30').sum()
+        count_no = (df_work['readmitted'] == 'NO').sum()
+        count_short = (df_work['readmitted'] == '<30').sum()
 
         readmit_counts = pd.DataFrame({
             "readmitted": ["No", "<30"],
