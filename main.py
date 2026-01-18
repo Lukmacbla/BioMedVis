@@ -6,7 +6,7 @@ import pandas as pd
 import altair as alt
 
 import matplotlib.pyplot as plt
-from basicplots import get_barchart, get_piechart, getStackedBarChart
+from basicplots import get_barchart, get_piechart, getStackedBarChart, getMosaic
 from cluster import render_graph, build_graph
 from filters import load_data, filter_by_age, filter_by_weight
 from upset import getUpsetPlot
@@ -142,6 +142,9 @@ def render_main_view():
             net.save_graph(tmp.name)
 
             st.components.v1.html(open(tmp.name).read(), height=800)
-        st.altair_chart(getStackedBarChart(filtered_df, readmission_type)) # TODO medication filter ?
+        if (selected_medications.__len__() > 1):
+            st.altair_chart(getMosaic(filtered_df, readmission_type, selected_medications))
+        else:
+            st.altair_chart(getStackedBarChart(filtered_df, readmission_type))
 
 render_main_view()

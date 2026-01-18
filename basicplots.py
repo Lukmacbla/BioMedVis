@@ -139,6 +139,9 @@ def icd9_to_category(code: str) -> str:
 
 
 def getStackedBarChart(df, readmission_type):
+    color_full = primary_color
+    color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
+    color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
     diag_cols = ["diag_1", "diag_2", "diag_3"]
 
     df_work = df.copy()
@@ -174,35 +177,125 @@ def getStackedBarChart(df, readmission_type):
         .transform(lambda x: x / x.sum())
     )
 
-    chart = (
-        alt.Chart(group_counts)
-        .mark_bar()
-        .encode(
-            x=alt.X(
-                "icd9_category:N",
-                title="Diagnosis category",
-                sort="-y",  # optional: control order
-                axis=alt.Axis(labelLimit=500)
-            ),
-            y=alt.Y(
-                "sum(pct):Q",
-                title="Proportion of patients",
-                stack="normalize",  # ensures full bar height = 1
-            ),
-            color=alt.Color(
-                "readmitted:N",
-                title="Readmission status"
-            ),
-            tooltip=[
-                alt.Tooltip("icd9_category:N", title="Diagnosis category"),
-                alt.Tooltip("readmitted:N", title="Readmitted"),
-                alt.Tooltip("pct:Q", title="Proportion", format=".1%")
-            ]
+    if (readmission_type == "Any"):
+        chart = (
+            alt.Chart(group_counts)
+            .mark_bar()
+            .encode(
+                x=alt.X(
+                    "icd9_category:N",
+                    title="Diagnosis category",
+                    sort="-y",  # optional: control order
+                    axis=alt.Axis(labelLimit=500)
+                ),
+                y=alt.Y(
+                    "sum(pct):Q",
+                    title="Proportion of patients",
+                    stack="normalize",  # ensures full bar height = 1
+                ),
+                color=alt.Color(
+                    "readmitted:N",
+                    title="Readmission status",
+                    scale=alt.Scale(domain=["NO", ">30", "<30"], range=[color_light, color_medium, color_full])
+                ),
+                tooltip=[
+                    alt.Tooltip("icd9_category:N", title="Diagnosis category"),
+                    alt.Tooltip("readmitted:N", title="Readmitted"),
+                    alt.Tooltip("pct:Q", title="Proportion", format=".1%")
+                ]
+            )
+            .properties(width=600, height=1000)
         )
-        .properties(width=600, height=1000)
-    )
+    else:
+        chart = (
+            alt.Chart(group_counts)
+            .mark_bar()
+            .encode(
+                x=alt.X(
+                    "icd9_category:N",
+                    title="Diagnosis category",
+                    sort="-y",  # optional: control order
+                    axis=alt.Axis(labelLimit=500)
+                ),
+                y=alt.Y(
+                    "sum(pct):Q",
+                    title="Proportion of patients",
+                    stack="normalize",  # ensures full bar height = 1
+                ),
+                color=alt.Color(
+                    "readmitted:N",
+                    title="Readmission status",
+                    scale=alt.Scale(domain=["NO", "<30"], range=[color_light, color_full])
+                ),
+                tooltip=[
+                    alt.Tooltip("icd9_category:N", title="Diagnosis category"),
+                    alt.Tooltip("readmitted:N", title="Readmitted"),
+                    alt.Tooltip("pct:Q", title="Proportion", format=".1%")
+                ]
+            )
+            .properties(width=600, height=1000)
+        )
 
     return chart
 
 
+def getMosaic(df, readmission_type, med_cols):
+    map_dict = {"No": 0, "Up": 1, "Down": 1, "Steady": 1}
+    df_work = df.copy()
+    df_work[med_cols] = df[med_cols].replace("?", pd.NA)
+    df_work[med_cols] = df_work[med_cols].replace(map_dict)
 
+    diag_cols = ["diag_1", "diag_2", "diag_3"]
+    df_work[diag_cols] = df[diag_cols].replace("?", pd.NA)
+
+    for col in diag_cols:
+        df_work[f"{col}_cat"] = df_work[col].apply(icd9_to_category)
+
+    diag_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
+    df_long = (
+        df_work
+        .melt(
+            id_vars=med_cols,
+            value_vars=diag_cols,
+            var_name="diag_position",
+            value_name="diagnosis_category"
+        )
+        .dropna(subset=["diagnosis_category"])
+    )
+
+    heatmap_data = (
+        df_long
+        .melt(
+            id_vars=["diagnosis_category"],
+            value_vars=med_cols,
+            var_name="medication",
+            value_name="used"
+        )
+        .groupby(["diagnosis_category", "medication"], as_index=False)["used"]
+        .mean()
+        .rename(columns={"used": "proportion"})
+    )
+    heatmap_data["percentage"] = heatmap_data["proportion"] * 100
+
+    heatmap = (
+        alt.Chart(heatmap_data)
+        .mark_rect()
+        .encode(
+            x=alt.X("diagnosis_category:N", title="Diagnosis category", axis=alt.Axis(labelLimit=500)),
+            y=alt.Y("medication:N", title="Medication", axis=alt.Axis(labelLimit=200)),
+            color=alt.Color(
+                "percentage:Q",
+                title="Percentage of patients on medication",
+                scale=alt.Scale(scheme="darkred", domain=[0, 100]),
+                legend=alt.Legend(orient="top", titleLimit=500)
+            ),
+            tooltip=[
+                alt.Tooltip("diagnosis_category:N", title="Diagnosis category"),
+                alt.Tooltip("medication:N", title="Medication"),
+                alt.Tooltip("percentage:Q", title="Percentage")
+            ]
+        )
+        .properties()
+    )
+
+    return heatmap
