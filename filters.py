@@ -48,9 +48,15 @@ def filter_by_weight(df: pd.DataFrame, weight_range: tuple, include_unknown=True
     
     return df[df["weight"].apply(is_in_range)]
 
+
 # Function to filter by race
 def filter_by_race(df: pd.DataFrame, selected_races: list):
     return df[df["race"].isin(selected_races)]
+
+def filter_by_readmission(df: pd.DataFrame, selectedType):
+    if selectedType == "Any":
+        return df
+    return df[df["readmitted"].isin(["<30", "NO"])]
 
 
 # Function to apply multiple filters at once

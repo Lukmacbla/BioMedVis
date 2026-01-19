@@ -8,7 +8,7 @@ import altair as alt
 import matplotlib.pyplot as plt
 from basicplots import get_barchart, get_piechart, getStackedBarChart, getMosaic
 from cluster import render_graph, build_graph
-from filters import load_data, filter_by_age, filter_by_weight
+from filters import load_data, filter_by_age, filter_by_weight, filter_by_readmission
 from upset import getUpsetPlot
 from overviewPlots import getOverviewPlots
 
@@ -43,6 +43,7 @@ age_range = age_container.slider(
     step=10
 )
 
+
 weight_container = st.sidebar.container(border=True)
 
 weight_range = weight_container.slider(
@@ -53,11 +54,15 @@ weight_range = weight_container.slider(
     step=25
 )
 include_unknown_weight = weight_container.checkbox("Include unknown", value=True)
-
+readmission_type = st.sidebar.radio(
+    "Readmission definition",
+    ["Any", "<30 days only"]
+)
 age_filtered_df = filter_by_age(dataframe, age_range)
 weight_filtered_df = filter_by_weight(age_filtered_df, weight_range, include_unknown_weight)
-race_counts = weight_filtered_df['race'].value_counts().reset_index()
-filtered_df = weight_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
+readmission_filtered_df = filter_by_readmission(weight_filtered_df, readmission_type)
+race_counts = readmission_filtered_df['race'].value_counts().reset_index()
+filtered_df = readmission_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
 race_counts.columns = ['race', 'count']  # rename columns for Altair
 
 
@@ -72,10 +77,7 @@ min_cooccurrence = st.sidebar.slider(
     value=50,
     step=10
 )
-readmission_type = st.sidebar.radio(
-    "Readmission definition",
-    ["Any", "<30 days only"]
-)
+
 size_mode = st.sidebar.radio(
     "Node size represents",
     ["Medication frequency", "Readmission risk"]
