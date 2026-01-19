@@ -27,7 +27,8 @@ def get_barchart(race_counts, selection):
     )
 
 def get_piechart(df, readmission_type, med_cols, race_selection=None):
-    df_work = df.copy()
+    used_cols = med_cols + ["readmitted", "race"]
+    df_work = df[used_cols].copy()
     df_work[med_cols] = (
         df_work[med_cols]
         .replace("?", pd.NA)
@@ -80,10 +81,15 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
                 alt.Tooltip("sum(count):Q", title="Count")
             ],
         )
-        .properties(width=500, height=500)
+        .properties(width=250, height=350)
     )
     return pie_chart
 
+
+
+
+import pandas as pd
+import re
 
 def icd9_to_category(code: str) -> str:
     """Map an ICD-9(-CM) diagnosis code (001-999, V, E) to a high-level category."""
@@ -145,7 +151,15 @@ def icd9_to_category(code: str) -> str:
 
 def getStackedBarChart(df, readmission_type, race_selection=None):
     diag_cat_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
+    diag_cols = ["diag_1", "diag_2", "diag_3"]
+    used_cols = diag_cols + ["readmitted", "race"]
 
+    df_work = df[used_cols].copy()
+    df_work[diag_cols] = df_work[diag_cols].replace("?", pd.NA)
+    for col in diag_cols:
+        df_work[f"{col}_cat"] = df_work[col].apply(icd9_to_category)
+
+    # Long form, then pre-aggregate by race/readmitted/icd9_category
     df_long = (
         df.melt(
             id_vars=["readmitted", "race"],
@@ -195,6 +209,12 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
     # Use precomputed diagnosis categories and med_bin columns
     diag_cat_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
     bin_cols = [f"{c}_bin" for c in med_cols]
+    # Map medication statuses to binary indicator
+    map_dict = {"No": 0, "Up": 1, "Down": 1, "Steady": 1}
+    diag_cols = ["diag_1", "diag_2", "diag_3"]
+    used_cols = med_cols + ["race"] + diag_cols
+    df_work = df.copy()
+    df_work[med_cols] = df_work[med_cols].replace("?", pd.NA).replace(map_dict)
 
     # Long table: 1 row per diagnosis category occurrence
     df_diag_long = (
@@ -226,12 +246,10 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
     agg_long["medication"] = agg_long["med_bin"].str.replace("_bin$", "", regex=True)
 
     base = alt.Chart(agg_long)
-    if race_selection is not None:
-        base = base.add_params(race_selection).transform_filter(race_selection)
 
     heatmap = (
         base
-        .mark_rect()
+        .mark_rect(cursor='default')
         .encode(
             x=alt.X("diagnosis_category:N", title="Diagnosis category", axis=alt.Axis(labelLimit=500)),
             y=alt.Y("medication:N", title="Medication", axis=alt.Axis(labelLimit=200)),
@@ -247,4 +265,8 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
         )
         .properties(width=600, height=350)
     )
+
+    if race_selection is not None:
+        heatmap = heatmap.transform_filter(race_selection)
+
     return heatmap
