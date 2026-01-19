@@ -3,6 +3,7 @@ import pandas as pd
 
 from globals import primary_color
 from utils import color_utils
+import re
 
 
 def get_barchart(race_counts, selection):
@@ -23,7 +24,8 @@ def get_barchart(race_counts, selection):
     )
 
 def get_piechart(df, readmission_type, med_cols, race_selection=None):
-    df_work = df.copy()
+    keep_cols = med_cols+(["race", "encounter_id", "readmitted"])
+    df_work = df[keep_cols].copy()
     df_work[med_cols] = df_work[med_cols].replace("?", pd.NA).replace({"No":0,"Up":1,"Down":1,"Steady":1})
     df_work = df_work[df_work[med_cols].isin([1]).any(axis=1)]
     color_full = primary_color
@@ -61,7 +63,7 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
             theta='count:Q',
             color=alt.Color('readmission_label:N',
                             scale=alt.Scale(domain=color_domain, range=color_range)),
-            tooltip=['readmission_label:N','count:Q'],
+            tooltip=['readmission_label:N','count:Q', 'race:N'],
 
         )
         .properties(width=500,height=500)
@@ -72,8 +74,6 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
 
 
 
-import pandas as pd
-import re
 
 def icd9_to_category(code: str) -> str:
     """Map an ICD-9(-CM) diagnosis code (001-999, V, E) to a high-level category."""
@@ -137,6 +137,8 @@ def icd9_to_category(code: str) -> str:
 def getStackedBarChart(df, readmission_type, race_selection=None):
     # Prep long data that retains 'race' for filtering
     diag_cols = ["diag_1", "diag_2", "diag_3"]
+
+    keep_cols = diag_cols + ["encounter_id", "readmitted", "race"]
 
     df_work = df.copy()
     df_work[diag_cols] = df_work[diag_cols].replace("?", pd.NA)

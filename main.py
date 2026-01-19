@@ -146,7 +146,9 @@ def render_main_view():
     fig1, ax1 = plt.subplots()
     race_count = race_count + alt.Chart(pd.DataFrame({'dummy': [0]})).mark_point(opacity=0)
     pie_chart = get_piechart(filtered_df, readmission_type, selected_medications, race_selection=race_selection)
-    pie_chart = pie_chart + alt.Chart(pd.DataFrame({'dummy': [0]})).mark_point(opacity=0)
+    #pie_chart = pie_chart + alt.Chart(pd.DataFrame({'dummy': [0]})).mark_point(opacity=0)
+
+    #pie_chart = pie_chart + tooltip_layer
 
 
     if (selected_medications.__len__() > 1):
