@@ -8,7 +8,7 @@ import altair as alt
 import matplotlib.pyplot as plt
 from basicplots import get_barchart, get_piechart, getStackedBarChart, getMosaic
 from cluster import render_graph, build_graph
-from filters import load_data, filter_by_age, filter_by_weight, filter_by_readmission, prepare_df, filter_all
+from filters import load_data, prepare_df, filter_all
 from upset import getUpsetPlot
 from overviewPlots import getOverviewPlots
 
@@ -26,7 +26,7 @@ st.markdown("Analyze medication strategies and their impact on clinical readmiss
 # -------------------------------
 
 dataframe, medication_column_names_filtered = load_data()
-df_prep = prepare_df(dataframe)
+df_prep = prepare_df(dataframe, med_cols_all=medication_column_names_filtered)
 
 
 # -------------------------------
@@ -143,16 +143,20 @@ def render_main_view():
 
     stacked_bar_chart = getStackedBarChart(filtered_df, readmission_type, race_selection=race_selection)
 
+    @st.cache_data(show_spinner=True, max_entries=8)
+    def cached_build_graph(df, min_cooccurrence, readmission_type, selected_meds):
+        G = build_graph(df, min_cooccurrence, readmission_type, selected_meds)
+        return G
+
     with col2:
         st.header("Medication Clusters")
-        G = build_graph(filtered_df, min_cooccurrence, readmission_type, selected_medications)
-
-        net = render_graph(G, size_mode)
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-            net.save_graph(tmp.name)
-
-            st.components.v1.html(open(tmp.name).read(), height=800)
+        if st.toggle("Show clusters", value=False):
+            with st.spinner("Building cluster graph..."):
+                G = cached_build_graph(filtered_df, min_cooccurrence, readmission_type, selected_medications)
+                net = render_graph(G, size_mode)
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+                    net.save_graph(tmp.name)
+                    st.components.v1.html(open(tmp.name).read(), height=800)
 
     fig1, ax1 = plt.subplots()
     race_count = race_count + alt.Chart(pd.DataFrame({'dummy': [0]})).mark_point(opacity=0)
@@ -163,7 +167,7 @@ def render_main_view():
 
 
     if (selected_medications.__len__() > 1):
-        st.altair_chart((race_count | pie_chart |getMosaic(filtered_df, readmission_type, selected_medications, race_selection=race_selection)).resolve_scale(color='shared'), use_container_width=True)
+        st.altair_chart((race_count | pie_chart |getMosaic(filtered_df, readmission_type, selected_medications, race_selection=race_selection)).resolve_scale(color='independent'), use_container_width=True)
     else:
         st.altair_chart( (race_count | pie_chart | stacked_bar_chart).resolve_scale(color='shared'), use_container_width=True)
 

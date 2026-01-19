@@ -5,6 +5,9 @@ from globals import primary_color
 from utils import color_utils
 import re
 
+color_full = primary_color
+color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
+color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
 
 def get_barchart(race_counts, selection):
     highlight_color = "black"  # selected bar color
@@ -56,9 +59,7 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
     if race_selection is not None:
         base = base.add_params(race_selection).transform_filter(race_selection)
 
-    color_full = primary_color
-    color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
-    color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
+
 
     if readmission_type == "Any":
         color_domain = ["NO", "<30", ">30"]
@@ -74,18 +75,15 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
             theta="sum(count):Q",
             color=alt.Color("readmission_label:N",
                             scale=alt.Scale(domain=color_domain, range=color_range)),
-            tooltip=['readmission_label:N','count:Q', 'race:N'],
-
+            tooltip=[
+                alt.Tooltip("readmission_label:N"),
+                alt.Tooltip("sum(count):Q", title="Count")
+            ],
         )
-        .properties(width=250, height=350)
+        .properties(width=500, height=500)
     )
     return pie_chart
 
-
-
-
-import pandas as pd
-import re
 
 def icd9_to_category(code: str) -> str:
     """Map an ICD-9(-CM) diagnosis code (001-999, V, E) to a high-level category."""
@@ -146,19 +144,12 @@ def icd9_to_category(code: str) -> str:
         return "Unknown"
 
 def getStackedBarChart(df, readmission_type, race_selection=None):
-    diag_cols = ["diag_1", "diag_2", "diag_3"]
+    diag_cat_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
 
-    df_work = df.copy()
-    df_work[diag_cols] = df_work[diag_cols].replace("?", pd.NA)
-    for col in diag_cols:
-        df_work[f"{col}_cat"] = df_work[col].apply(icd9_to_category)
-
-    # Long form, then pre-aggregate by race/readmitted/icd9_category
     df_long = (
-        df_work
-        .melt(
+        df.melt(
             id_vars=["readmitted", "race"],
-            value_vars=[f"{c}_cat" for c in diag_cols],
+            value_vars=diag_cat_cols,
             var_name="diag_position",
             value_name="icd9_category"
         )
@@ -171,8 +162,6 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
         .size()
         .rename(columns={"size": "count"})
     )
-
-    # If not "Any", drop the >30 bucket now (saves data)
     if readmission_type != "Any":
         counts = counts[counts["readmitted"].isin(["NO", "<30"])]
 
@@ -180,17 +169,7 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
     if race_selection is not None:
         base = base.add_params(race_selection).transform_filter(race_selection)
 
-    color_full = primary_color
-    color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
-    color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
-
-    if readmission_type == "Any":
-        color_domain = ["NO", "<30", ">30"]
-        color_range = [color_light, color_medium, color_full]
-    else:
-        color_domain = ["NO", "<30"]
-        color_range = [color_light, color_full]
-
+    # colors omitted for brevity; keep your existing scale setup
     chart = (
         base
         .mark_bar()
@@ -199,7 +178,8 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
                     axis=alt.Axis(labelLimit=500)),
             y=alt.Y("sum(count):Q", title="Proportion of patients", stack="normalize"),
             color=alt.Color("readmitted:N", title="Readmission status",
-                            scale=alt.Scale(domain=color_domain, range=color_range)),
+                            scale=alt.Scale(domain=["NO","<30"] if readmission_type!="Any" else ["NO","<30",">30"],
+                                            range=[color_light, color_full] if readmission_type!="Any" else [color_light, color_medium, color_full])),
             tooltip=[
                 alt.Tooltip("icd9_category:N", title="Diagnosis category"),
                 alt.Tooltip("readmitted:N", title="Readmitted"),
@@ -212,56 +192,38 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
 
 
 def getMosaic(df, readmission_type, med_cols, race_selection=None):
-    # Map medication statuses to binary indicator
-    map_dict = {"No": 0, "Up": 1, "Down": 1, "Steady": 1}
+    # Use precomputed diagnosis categories and med_bin columns
+    diag_cat_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
+    bin_cols = [f"{c}_bin" for c in med_cols]
 
-    df_work = df.copy()
-    df_work[med_cols] = df_work[med_cols].replace("?", pd.NA).replace(map_dict)
-
-    # Derive diagnosis categories for diag_1/2/3
-    diag_cols = ["diag_1", "diag_2", "diag_3"]
-    df_work[diag_cols] = df_work[diag_cols].replace("?", pd.NA)
-
-    for col in diag_cols:
-        df_work[f"{col}_cat"] = df_work[col].apply(icd9_to_category)
-
-    # Long table with one diagnosis category per row (retain race)
+    # Long table: 1 row per diagnosis category occurrence
     df_diag_long = (
-        df_work
-        .melt(
-            id_vars=["race"] + med_cols,
-            value_vars=[f"{c}_cat" for c in diag_cols],
+        df.melt(
+            id_vars=["race"] + bin_cols,
+            value_vars=diag_cat_cols,
             var_name="diag_position",
             value_name="diagnosis_category"
         )
         .dropna(subset=["diagnosis_category"])
     )
 
-    # Pre-aggregate: per (race, diagnosis_category), compute mean used per medication
-    # mean skips NaN by default; also compute counts for tooltip
-    agg_means = (
-        df_diag_long
-        .groupby(["race", "diagnosis_category"], as_index=False)[med_cols]
-        .mean()
-    )
+    # Aggregate: mean usage per med by (race, diagnosis_category)
+    agg_means = df_diag_long.groupby(["race", "diagnosis_category"], as_index=False)[bin_cols].mean()
     agg_counts = (
-        df_diag_long
-        .groupby(["race", "diagnosis_category"], as_index=False)
-        .size()
-        .rename(columns={"size": "n"})
+        df_diag_long.groupby(["race", "diagnosis_category"], as_index=False)
+        .size().rename(columns={"size": "n"})
     )
     agg = agg_means.merge(agg_counts, on=["race", "diagnosis_category"], how="left")
 
-    # Melt to long form for Altair: medication, mean_used
-    agg_long = (
-        agg
-        .melt(
-            id_vars=["race", "diagnosis_category", "n"],
-            value_vars=med_cols,
-            var_name="medication",
-            value_name="mean_used"
-        )
+    # Melt back to long
+    agg_long = agg.melt(
+        id_vars=["race", "diagnosis_category", "n"],
+        value_vars=bin_cols,
+        var_name="med_bin",
+        value_name="mean_used"
     )
+    # Recover nice medication names
+    agg_long["medication"] = agg_long["med_bin"].str.replace("_bin$", "", regex=True)
 
     base = alt.Chart(agg_long)
     if race_selection is not None:
@@ -271,16 +233,11 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
         base
         .mark_rect()
         .encode(
-            x=alt.X("diagnosis_category:N", title="Diagnosis category",
-                    axis=alt.Axis(labelLimit=500)),
-            y=alt.Y("medication:N", title="Medication",
-                    axis=alt.Axis(labelLimit=200)),
-            color=alt.Color(
-                "mean_used:Q",
-                title="Percentage of patients on medication",
-                scale=alt.Scale(scheme="darkred", domain=[0, 1]),
-                legend=alt.Legend(orient="top", titleLimit=500, format=".0%")
-            ),
+            x=alt.X("diagnosis_category:N", title="Diagnosis category", axis=alt.Axis(labelLimit=500)),
+            y=alt.Y("medication:N", title="Medication", axis=alt.Axis(labelLimit=200)),
+            color=alt.Color("mean_used:Q", title="Percentage of patients on medication",
+                            scale=alt.Scale(scheme="darkred", domain=[0, 1]),
+                            legend=alt.Legend(orient="top", titleLimit=500, format=".0%")),
             tooltip=[
                 alt.Tooltip("diagnosis_category:N", title="Diagnosis category"),
                 alt.Tooltip("medication:N", title="Medication"),
@@ -290,5 +247,4 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
         )
         .properties(width=600, height=350)
     )
-
     return heatmap

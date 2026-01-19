@@ -2,6 +2,8 @@ import streamlit as st
 
 import pandas as pd
 
+from basicplots import icd9_to_category
+
 
 @st.cache_data(show_spinner=True)
 def load_data():
@@ -15,23 +17,35 @@ def load_data():
     ]
     return df, medication_column_names_filtered
 @st.cache_data(show_spinner=False)
-def prepare_df(df: pd.DataFrame) -> pd.DataFrame:
+def prepare_df(df: pd.DataFrame, med_cols_all=None) -> pd.DataFrame:
     df = df.copy()
 
-    # Age like "[70-80)" -> extract lower bound
+    # Age lower bound
     df["age_lb"] = df["age"].str.extract(r"(\d+)").astype("int16")
 
-    # Weight: "?", "[150-175)", ">200"
-    # Treat ">200" as 200; unknown -> NaN
+    # Weight lower bound: "?", ">200" -> NaN or 200
     w = df["weight"].replace({"?": pd.NA, ">200": "200"})
     df["weight_lb"] = pd.to_numeric(w.str.extract(r"(\d+)")[0], errors="coerce").astype("float32")
 
-    # Cast to category to speed filtering and save memory
+    # Diagnosis categories (do this ONCE, not in each chart)
+    diag_cols = ["diag_1", "diag_2", "diag_3"]
+    df[diag_cols] = df[diag_cols].replace("?", pd.NA)
+    for col in diag_cols:
+        df[f"{col}_cat"] = df[col].apply(icd9_to_category)
+
+    # Optional: precompute binary med usage for all meds you will ever show
+    if med_cols_all:
+        df[med_cols_all] = df[med_cols_all].replace("?", pd.NA)
+        for c in med_cols_all:
+            # 1 if Up/Down/Steady, else 0
+            df[f"{c}_bin"] = (df[c].isin(["Up", "Down", "Steady"])).astype("int8")
+
+    # Cast to category to speed filtering/groupbys
     for col in ["readmitted", "race"]:
         if col in df.columns:
             df[col] = df[col].astype("category")
-
     return df
+
 def filter_by_age(df: pd.DataFrame, age_range: tuple):
     """
     Function to filter by age range.
@@ -72,7 +86,9 @@ def filter_by_race(df: pd.DataFrame, selected_races: list):
 
 def filter_by_readmission(df: pd.DataFrame, selectedType):
     if selectedType == "Any":
+        print("using any")
         return df
+    print("using selected type: " + selectedType)
     return df[df["readmitted"].isin(["<30", "NO"])]
 
 
@@ -91,7 +107,6 @@ def filter_all(df, age_range, weight_range, include_unknown_weight=True, readmis
         mask_weight = df["weight_lb"].notna() & (
             (df["weight_lb"] >= min_w) & (df["weight_lb"] < max_w)
         )
-
     if readmission_type == "Any":
         mask_readm = pd.Series(True, index=df.index)
     else:
