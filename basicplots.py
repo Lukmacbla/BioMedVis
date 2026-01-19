@@ -24,7 +24,8 @@ def get_barchart(race_counts, selection):
     )
 
 def get_piechart(df, readmission_type, med_cols, race_selection=None):
-    df_work = df.copy()
+    used_cols = med_cols + ["readmitted", "race"]
+    df_work = df[used_cols].copy()
     df_work[med_cols] = (
         df_work[med_cols]
         .replace("?", pd.NA)
@@ -147,8 +148,9 @@ def icd9_to_category(code: str) -> str:
 
 def getStackedBarChart(df, readmission_type, race_selection=None):
     diag_cols = ["diag_1", "diag_2", "diag_3"]
+    used_cols = diag_cols + ["readmitted", "race"]
 
-    df_work = df.copy()
+    df_work = df[used_cols].copy()
     df_work[diag_cols] = df_work[diag_cols].replace("?", pd.NA)
     for col in diag_cols:
         df_work[f"{col}_cat"] = df_work[col].apply(icd9_to_category)
@@ -214,12 +216,13 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
 def getMosaic(df, readmission_type, med_cols, race_selection=None):
     # Map medication statuses to binary indicator
     map_dict = {"No": 0, "Up": 1, "Down": 1, "Steady": 1}
-
+    diag_cols = ["diag_1", "diag_2", "diag_3"]
+    used_cols = med_cols + ["race"] + diag_cols
     df_work = df.copy()
     df_work[med_cols] = df_work[med_cols].replace("?", pd.NA).replace(map_dict)
 
     # Derive diagnosis categories for diag_1/2/3
-    diag_cols = ["diag_1", "diag_2", "diag_3"]
+
     df_work[diag_cols] = df_work[diag_cols].replace("?", pd.NA)
 
     for col in diag_cols:

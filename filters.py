@@ -5,10 +5,11 @@ import pandas as pd
 
 @st.cache_data(show_spinner=True)
 def load_data():
-    df = pd.read_csv("data/diabetic_data.csv")
+    df = pd.read_csv("data/diabetic_data_smol.csv")
 
     # Filter medication columns correctly and efficiently
-    medication_column_names = df.columns[24:47].tolist()
+    medication_column_names = df.columns[24-17:47-17].tolist()
+    #medication_column_names = df.columns[24:47].tolist()
     medication_column_names_filtered = [
         c for c in medication_column_names
             if (df[c] != "No").sum() > 100
