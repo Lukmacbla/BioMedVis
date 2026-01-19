@@ -209,7 +209,8 @@ def getStackedBarChart(df, readmission_type):
                 tooltip=[
                     alt.Tooltip("icd9_category:N", title="Diagnosis category"),
                     alt.Tooltip("readmitted:N", title="Readmitted"),
-                    alt.Tooltip("pct:Q", title="Proportion", format=".1%")
+                    alt.Tooltip("pct:Q", title="Proportion", format=".1%"),
+                    alt.Tooltip("count:Q", title="Count")
                 ]
             )
             .properties(width=600, height=1000)

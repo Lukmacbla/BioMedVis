@@ -23,7 +23,7 @@ def getOverviewPlots(df, readmission_type, med_cols):
     heatmap_df = pd.DataFrame(data)
 
     n_categories = len(heatmap_df["medication"].unique())
-    min_height = max(500, n_categories * 50)
+    min_height = max(600, n_categories * 50)
 
 
     chart = (alt.Chart(heatmap_df).

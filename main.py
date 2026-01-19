@@ -108,8 +108,9 @@ def render_main_view():
         
     race_count = get_barchart(race_counts)
 
+    col1, col2 = st.columns(2)
     # overview plot
-    tab1, tab2 = st.tabs(["Medication Strategy", "Medication Distribution"])
+    tab1, tab2 = col1.tabs(["Medication Strategy", "Medication Distribution"])
 
     with tab1:
         st.header("Medication Strategy")
@@ -125,7 +126,7 @@ def render_main_view():
 
 
 
-    col1, col2 = st.columns(2)
+
 
     with col1:
         fig1, ax1 = plt.subplots()
