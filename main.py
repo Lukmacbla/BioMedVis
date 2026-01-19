@@ -126,11 +126,13 @@ def render_main_view():
         st.altair_chart(getOverviewPlots(filtered_df, readmission_type, selected_medications))
     with tab2:
         st.header("Medication Distribution")
-
-        upset_plot = getUpsetPlot(age_filtered_df, selected_medications)
+        if selected_medications.__len__() > 6:
+            st.warning("There are too many medications selected. Please select a maximum of 6 medications.")
+        else:
+            upset_plot = getUpsetPlot(age_filtered_df, selected_medications)
 
         # event = st.altair_chart(upset_plot, use_container_width=False, on_select="rerun")
-        event = st.altair_chart(upset_plot)
+            st.altair_chart(upset_plot)
     # medication chart
 
     stacked_bar_chart = getStackedBarChart(filtered_df, readmission_type, race_selection=race_selection)
