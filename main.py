@@ -150,7 +150,7 @@ def render_main_view():
 
 
     if (selected_medications.__len__() > 1):
-        st.altair_chart((race_count | pie_chart | getMosaic(filtered_df, readmission_type, selected_medications, race_selection=race_selection)).resolve_scale(color='shared'), use_container_width=True)
+        st.altair_chart((race_count | pie_chart |getMosaic(filtered_df, readmission_type, selected_medications, race_selection=race_selection)).resolve_scale(color='shared'), use_container_width=True)
     else:
         st.altair_chart( (race_count | pie_chart | stacked_bar_chart).resolve_scale(color='shared'), use_container_width=True)
 
