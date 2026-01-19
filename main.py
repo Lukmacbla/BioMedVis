@@ -69,8 +69,10 @@ race_counts.columns = ['race', 'count']  # rename columns for Altair
 race_selection = alt.selection_point(fields=['race'], toggle=True)
 base = alt.Chart(filtered_df)
 
-
-min_cooccurrence = st.sidebar.slider(
+cluster_container = st.sidebar.container(border=True)
+with cluster_container:
+    st.header("Medication Clusters")
+min_cooccurrence = cluster_container.slider(
     "Minimum co-occurrence",
     min_value=10,
     max_value=500,
@@ -78,7 +80,7 @@ min_cooccurrence = st.sidebar.slider(
     step=10
 )
 
-size_mode = st.sidebar.radio(
+size_mode = cluster_container.radio(
     "Node size represents",
     ["Medication frequency", "Readmission risk"]
 )
@@ -134,6 +136,7 @@ def render_main_view():
     stacked_bar_chart = getStackedBarChart(filtered_df, readmission_type, race_selection=race_selection)
 
     with col2:
+        st.header("Medication Clusters")
         G = build_graph(filtered_df, min_cooccurrence, readmission_type, selected_medications)
 
         net = render_graph(G, size_mode)
