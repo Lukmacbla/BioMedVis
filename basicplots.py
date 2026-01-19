@@ -264,12 +264,10 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
     )
 
     base = alt.Chart(agg_long)
-    if race_selection is not None:
-        base = base.add_params(race_selection).transform_filter(race_selection)
 
     heatmap = (
         base
-        .mark_rect()
+        .mark_rect(cursor='default')
         .encode(
             x=alt.X("diagnosis_category:N", title="Diagnosis category",
                     axis=alt.Axis(labelLimit=500)),
@@ -290,5 +288,8 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
         )
         .properties(width=600, height=350)
     )
+
+    if race_selection is not None:
+        heatmap = heatmap.transform_filter(race_selection)
 
     return heatmap
