@@ -3,18 +3,35 @@ import streamlit as st
 import pandas as pd
 
 
-@st.cache_data
+@st.cache_data(show_spinner=True)
 def load_data():
+    df = pd.read_csv("data/diabetic_data.csv")
 
-    df =  pd.read_csv("data/diabetic_data.csv")
+    # Filter medication columns correctly and efficiently
     medication_column_names = df.columns[24:47].tolist()
-    medication_column_names_filtered = []
-    for column_name in medication_column_names:
-        if df[df[column_name]!="No"].size > 100:
-            medication_column_names_filtered.append(column_name)
-
+    medication_column_names_filtered = [
+        c for c in medication_column_names
+            if (df[c] != "No").sum() > 100
+    ]
     return df, medication_column_names_filtered
+@st.cache_data(show_spinner=False)
+def prepare_df(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
 
+    # Age like "[70-80)" -> extract lower bound
+    df["age_lb"] = df["age"].str.extract(r"(\d+)").astype("int16")
+
+    # Weight: "?", "[150-175)", ">200"
+    # Treat ">200" as 200; unknown -> NaN
+    w = df["weight"].replace({"?": pd.NA, ">200": "200"})
+    df["weight_lb"] = pd.to_numeric(w.str.extract(r"(\d+)")[0], errors="coerce").astype("float32")
+
+    # Cast to category to speed filtering and save memory
+    for col in ["readmitted", "race"]:
+        if col in df.columns:
+            df[col] = df[col].astype("category")
+
+    return df
 def filter_by_age(df: pd.DataFrame, age_range: tuple):
     """
     Function to filter by age range.
@@ -59,16 +76,27 @@ def filter_by_readmission(df: pd.DataFrame, selectedType):
     return df[df["readmitted"].isin(["<30", "NO"])]
 
 
-# Function to apply multiple filters at once
-def filter_data(df: pd.DataFrame, selected_ages=None, selected_races=None, selected_islands=None):
-    filtered = df.copy()
+def filter_all(df, age_range, weight_range, include_unknown_weight=True, readmission_type="Any"):
+    min_age, max_age = age_range
+    min_w, max_w = weight_range
 
-    if selected_ages is not None:
-        filtered = filtered[filtered["age"].isin(selected_ages)]
-    if selected_races is not None:
-        filtered = filtered[filtered["race"].isin(selected_races)]
-    if selected_islands is not None:
-        filtered = filtered[filtered["island"].isin(selected_islands)]
+    # Vectorized masks
+    mask_age = (df["age_lb"] >= min_age) & (df["age_lb"] < max_age)
 
-    return filtered
+    if include_unknown_weight:
+        mask_weight = df["weight_lb"].isna() | (
+            (df["weight_lb"] >= min_w) & (df["weight_lb"] < max_w)
+        )
+    else:
+        mask_weight = df["weight_lb"].notna() & (
+            (df["weight_lb"] >= min_w) & (df["weight_lb"] < max_w)
+        )
 
+    if readmission_type == "Any":
+        mask_readm = pd.Series(True, index=df.index)
+    else:
+        # Keep only NO and <30
+        mask_readm = df["readmitted"].isin(["NO", "<30"])
+
+    mask = mask_age & mask_weight & mask_readm
+    return df.loc[mask]

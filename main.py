@@ -8,7 +8,7 @@ import altair as alt
 import matplotlib.pyplot as plt
 from basicplots import get_barchart, get_piechart, getStackedBarChart, getMosaic
 from cluster import render_graph, build_graph
-from filters import load_data, filter_by_age, filter_by_weight, filter_by_readmission
+from filters import load_data, filter_by_age, filter_by_weight, filter_by_readmission, prepare_df, filter_all
 from upset import getUpsetPlot
 from overviewPlots import getOverviewPlots
 
@@ -26,6 +26,7 @@ st.markdown("Analyze medication strategies and their impact on clinical readmiss
 # -------------------------------
 
 dataframe, medication_column_names_filtered = load_data()
+df_prep = prepare_df(dataframe)
 
 
 # -------------------------------
@@ -58,11 +59,16 @@ readmission_type = st.sidebar.radio(
     "Readmission definition",
     ["Any", "<30 days only"]
 )
-age_filtered_df = filter_by_age(dataframe, age_range)
-weight_filtered_df = filter_by_weight(age_filtered_df, weight_range, include_unknown_weight)
-readmission_filtered_df = filter_by_readmission(weight_filtered_df, readmission_type)
-race_counts = readmission_filtered_df['race'].value_counts().reset_index()
-filtered_df = readmission_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
+
+filtered_df = filter_all(
+    df_prep,
+    age_range=age_range,
+    weight_range=weight_range,
+    include_unknown_weight=include_unknown_weight,
+    readmission_type=readmission_type
+)
+
+race_counts = filtered_df['race'].value_counts().reset_index()
 race_counts.columns = ['race', 'count']  # rename columns for Altair
 
 
@@ -129,7 +135,7 @@ def render_main_view():
         if selected_medications.__len__() > 6:
             st.warning("There are too many medications selected. Please select a maximum of 6 medications.")
         else:
-            upset_plot = getUpsetPlot(age_filtered_df, selected_medications)
+            upset_plot = getUpsetPlot(filtered_df, selected_medications)
 
         # event = st.altair_chart(upset_plot, use_container_width=False, on_select="rerun")
             st.altair_chart(upset_plot)
