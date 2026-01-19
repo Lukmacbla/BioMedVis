@@ -5,83 +5,71 @@ from globals import primary_color
 from utils import color_utils
 
 
-def get_barchart(race_counts):
-    return alt.Chart(race_counts).mark_bar().encode(
-        x='race',  # races on x-axis
-        y='count',  # counts on y-axis
-        tooltip=['race', 'count']  # hover shows race and count
-    ).properties(
-        title='Number of patients per race'
+def get_barchart(race_counts, selection):
+    highlight_color = "black"  # selected bar color
+    default_color = "lightgray"   # unselected bar color
+
+    return (
+        alt.Chart(race_counts)
+        .mark_bar()
+        .encode(
+            x='race:N',
+            y='count:Q',
+            color=alt.condition(selection, alt.value(highlight_color), alt.value(default_color)),
+            tooltip=['race:N','count:Q']
+        ).properties(width=200, height=500)
+        .add_params(selection)
+        .properties(title='Patient count per race')
     )
 
-def get_piechart(df, readmission_type, med_cols):
-    map_dict = {"No": 0, "Up": 1, "Down": 1, "Steady": 1}
+def get_piechart(df, readmission_type, med_cols, race_selection=None):
+    df_work = df.copy()
+    df_work[med_cols] = df_work[med_cols].replace("?", pd.NA).replace({"No":0,"Up":1,"Down":1,"Steady":1})
+    df_work = df_work[df_work[med_cols].isin([1]).any(axis=1)]
     color_full = primary_color
     color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
     color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
 
-    df_work = df.copy()
-    df_work[med_cols] = df[med_cols].replace("?", pd.NA)
-    df_work[med_cols] = df_work[med_cols].replace(map_dict)
-
-    mask_med_taken = df_work[med_cols].isin([1]).any(axis=1)
-    df_work = df_work[mask_med_taken]
-
+    base = alt.Chart(df_work)
     if readmission_type == "Any":
-        count_no = (df_work['readmitted'] == 'NO').sum()
-        count_short = (df_work['readmitted'] == '<30').sum()
-        count_long = (df_work['readmitted'] == '>30').sum()
-
-        readmit_counts = pd.DataFrame({
-            "readmitted": ["Never", "<30 days", ">30 days"],
-            "count": [count_no, count_short, count_long]
-        })
-
-        # Create Altair chart
-
-        def map_readmitted_label(readmitted):
-            switch = {
-                'No': 'Never',
-                '<30': '<30 days',
-                '>30': '>30 days'
-            }
-            return switch.get(readmitted)
-
-        pie_chart = alt.Chart(readmit_counts).mark_arc().encode(
-            theta=alt.Theta("count:Q", stack=True),
-            color=alt.Color("readmitted:N", title="Readmission", scale=alt.Scale(domain=["Never", ">30 days", "<30 days"], range=[color_light, color_medium, color_full])),
-            tooltip=[alt.Tooltip("readmitted:N", title="Readmission"), alt.Tooltip("count:Q", title="Encounters")]
-        ).properties(
-            width=400,
-            height=400,
-            title="Readmission distribution"
-        )
-
-        return pie_chart
-
+        color_domain = ["NO", "<30", ">30"]
+        color_range = [color_light,color_medium, color_full,]
     else:
-        count_no = (df_work['readmitted'] == 'NO').sum()
-        count_short = (df_work['readmitted'] == '<30').sum()
+        color_domain = ["NO", "<30"]
+        color_range = [color_light, color_full]
 
-        readmit_counts = pd.DataFrame({
-            "readmitted": ["No", "<30"],
-            "count": [count_no, count_short, ]
-        })
+    # Only add selection    if passed
+    if race_selection is not None:
+        base = base.add_params(race_selection).transform_filter(race_selection)
 
-        # Create Altair chart
+    pie_chart = (
+        base
+        .transform_calculate(
+            readmission_label="""
+                datum.readmitted == 'NO' ? 'NO' :
+                datum.readmitted == '<30' ? '<30' :
+                '>30'
+            """
+        )
+        # Aggregation happens after filtering, and we keep race column
+        .transform_aggregate(
+            count='count()',
+            groupby=['readmission_label', 'race']
+        )
+        .mark_arc()
+        .encode(
+            theta='count:Q',
+            color=alt.Color('readmission_label:N',
+                            scale=alt.Scale(domain=color_domain, range=color_range)),
+            tooltip=['readmission_label:N','count:Q'],
 
-        return (((alt.Chart(readmit_counts).
-                  mark_arc()).
-        encode(
-            theta=alt.Theta("count:Q", stack=True),
-            color=alt.Color("readmitted:N", title="Readmission", scale=alt.Scale(domain=["No", "<30"], range=[color_light, color_full])),
-            tooltip=["readmitted", "count"]
-        )).
-        properties(
-            width=400,
-            height=400,
-            title="Readmission distribution"
-        ))
+        )
+        .properties(width=500,height=500)
+    )
+
+    return pie_chart
+
+
 
 
 import pandas as pd
@@ -146,165 +134,128 @@ def icd9_to_category(code: str) -> str:
         return "Unknown"
 
 
-def getStackedBarChart(df, readmission_type):
-    color_full = primary_color
-    color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
-    color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
+def getStackedBarChart(df, readmission_type, race_selection=None):
+    # Prep long data that retains 'race' for filtering
     diag_cols = ["diag_1", "diag_2", "diag_3"]
 
     df_work = df.copy()
-    df_work[diag_cols] = df[diag_cols].replace("?", pd.NA)
-
+    df_work[diag_cols] = df_work[diag_cols].replace("?", pd.NA)
     for col in diag_cols:
         df_work[f"{col}_cat"] = df_work[col].apply(icd9_to_category)
 
-    diag_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
     df_long = (
         df_work
         .melt(
-            id_vars=["readmitted"],  # keep readmission status
-            value_vars=diag_cols,
+            id_vars=["readmitted", "race"],
+            value_vars=["diag_1_cat", "diag_2_cat", "diag_3_cat"],
             var_name="diag_position",
             value_name="icd9_category"
         )
-        .dropna(subset=["icd9_category"])  # ensure no missing diagnosis
+        .dropna(subset=["icd9_category"])
     )
 
-    # 2) Count patients per (diagnosis category, readmitted)
-    group_counts = (
-        df_long
-        .groupby(["icd9_category", "readmitted"])
-        .size()
-        .reset_index(name="count")
-    )
+    base = alt.Chart(df_long)
+    if race_selection is not None:
+        base = base.add_params(race_selection).transform_filter(race_selection)
+    print(race_selection)
+    color_full = primary_color
+    color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
+    color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
 
-    # 3) Compute percentage within each diagnosis category
-    group_counts["pct"] = (
-        group_counts
-        .groupby("icd9_category")["count"]
-        .transform(lambda x: x / x.sum())
-    )
-
-    if (readmission_type == "Any"):
-        chart = (
-            alt.Chart(group_counts)
-            .mark_bar()
-            .encode(
-                x=alt.X(
-                    "icd9_category:N",
-                    title="Diagnosis category",
-                    sort="-y",  # optional: control order
-                    axis=alt.Axis(labelLimit=500)
-                ),
-                y=alt.Y(
-                    "sum(pct):Q",
-                    title="Proportion of patients",
-                    stack="normalize",  # ensures full bar height = 1
-                ),
-                color=alt.Color(
-                    "readmitted:N",
-                    title="Readmission status",
-                    scale=alt.Scale(domain=["NO", ">30", "<30"], range=[color_light, color_medium, color_full])
-                ),
-                tooltip=[
-                    alt.Tooltip("icd9_category:N", title="Diagnosis category"),
-                    alt.Tooltip("readmitted:N", title="Readmitted"),
-                    alt.Tooltip("pct:Q", title="Proportion", format=".1%"),
-                    alt.Tooltip("count:Q", title="Count")
-                ]
-            )
-            .properties(width=600, height=1000)
-        )
+    # Choose color domain and range
+    if readmission_type == "Any":
+        color_domain = ["NO", "<30", ">30"]
+        color_range = [color_light,color_medium, color_full,]
     else:
-        chart = (
-            alt.Chart(group_counts)
-            .mark_bar()
-            .encode(
-                x=alt.X(
-                    "icd9_category:N",
-                    title="Diagnosis category",
-                    sort="-y",  # optional: control order
-                    axis=alt.Axis(labelLimit=500)
-                ),
-                y=alt.Y(
-                    "sum(pct):Q",
-                    title="Proportion of patients",
-                    stack="normalize",  # ensures full bar height = 1
-                ),
-                color=alt.Color(
-                    "readmitted:N",
-                    title="Readmission status",
-                    scale=alt.Scale(domain=["NO", "<30"], range=[color_light, color_full])
-                ),
-                tooltip=[
-                    alt.Tooltip("icd9_category:N", title="Diagnosis category"),
-                    alt.Tooltip("readmitted:N", title="Readmitted"),
-                    alt.Tooltip("pct:Q", title="Proportion", format=".1%")
-                ]
-            )
-            .properties(width=600, height=1000)
-        )
+        color_domain = ["NO", "<30"]
+        color_range = [color_light, color_full]
 
+    chart = (
+        base
+        .mark_bar()
+        .encode(
+            x=alt.X("icd9_category:N", title="Diagnosis category", sort="-y",
+                    axis=alt.Axis(labelLimit=500)),
+            # Aggregate in Altair so proportions update when the selection filters
+            y=alt.Y("count():Q", title="Proportion of patients", stack="normalize"),
+            color=alt.Color("readmitted:N", title="Readmission status",
+                            scale=alt.Scale(domain=color_domain, range=color_range)),
+            tooltip=[
+                alt.Tooltip("icd9_category:N", title="Diagnosis category"),
+                alt.Tooltip("readmitted:N", title="Readmitted"),
+                alt.Tooltip("count():Q", title="Count")
+            ]
+        )
+        .properties(width=1000, height=500)
+    )
     return chart
 
 
-def getMosaic(df, readmission_type, med_cols):
+def getMosaic(df, readmission_type, med_cols, race_selection=None):
+    # Map medication statuses to binary "used" indicator
     map_dict = {"No": 0, "Up": 1, "Down": 1, "Steady": 1}
+
     df_work = df.copy()
-    df_work[med_cols] = df[med_cols].replace("?", pd.NA)
-    df_work[med_cols] = df_work[med_cols].replace(map_dict)
+    df_work[med_cols] = df_work[med_cols].replace("?", pd.NA).replace(map_dict)
 
     diag_cols = ["diag_1", "diag_2", "diag_3"]
-    df_work[diag_cols] = df[diag_cols].replace("?", pd.NA)
+    df_work[diag_cols] = df_work[diag_cols].replace("?", pd.NA)
 
+    # Derive diagnosis categories
     for col in diag_cols:
         df_work[f"{col}_cat"] = df_work[col].apply(icd9_to_category)
 
-    diag_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
+    # Long table that retains 'race' so we can filter by selection
     df_long = (
         df_work
         .melt(
-            id_vars=med_cols,
-            value_vars=diag_cols,
+            id_vars=med_cols + ["race"],  # keep race for filtering
+            value_vars=["diag_1_cat", "diag_2_cat", "diag_3_cat"],
             var_name="diag_position",
             value_name="diagnosis_category"
         )
         .dropna(subset=["diagnosis_category"])
     )
 
-    heatmap_data = (
+    # Second melt: turn medication columns into a single 'medication' column with values in 'used'
+    df_heat_long = (
         df_long
         .melt(
-            id_vars=["diagnosis_category"],
+            id_vars=["diagnosis_category", "race"],
             value_vars=med_cols,
             var_name="medication",
             value_name="used"
         )
-        .groupby(["diagnosis_category", "medication"], as_index=False)["used"]
-        .mean()
-        .rename(columns={"used": "proportion"})
+        .dropna(subset=["used"])
     )
-    heatmap_data["percentage"] = heatmap_data["proportion"] * 100
+
+    # Build chart; filter by race before aggregation, aggregate in Altair
+    base = alt.Chart(df_heat_long)
+    if race_selection is not None:
+        base = base.add_params(race_selection).transform_filter(race_selection)
 
     heatmap = (
-        alt.Chart(heatmap_data)
+        base
         .mark_rect()
         .encode(
-            x=alt.X("diagnosis_category:N", title="Diagnosis category", axis=alt.Axis(labelLimit=500)),
-            y=alt.Y("medication:N", title="Medication", axis=alt.Axis(labelLimit=200)),
+            x=alt.X("diagnosis_category:N", title="Diagnosis category",
+                    axis=alt.Axis(labelLimit=500)),
+            y=alt.Y("medication:N", title="Medication",
+                    axis=alt.Axis(labelLimit=200)),
+            # mean(used) ∈ [0,1]; format as percentage in legend and tooltip
             color=alt.Color(
-                "percentage:Q",
+                "mean(used):Q",
                 title="Percentage of patients on medication",
-                scale=alt.Scale(scheme="darkred", domain=[0, 100]),
-                legend=alt.Legend(orient="top", titleLimit=500)
+                scale=alt.Scale(scheme="darkred", domain=[0, 1]),
+                legend=alt.Legend(orient="top", titleLimit=500, format=".0%")
             ),
             tooltip=[
                 alt.Tooltip("diagnosis_category:N", title="Diagnosis category"),
                 alt.Tooltip("medication:N", title="Medication"),
-                alt.Tooltip("percentage:Q", title="Percentage")
+                alt.Tooltip("mean(used):Q", title="Percentage", format=".1%")
             ]
         )
-        .properties()
+        .properties(width=1000, height=500)
     )
 
     return heatmap

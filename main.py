@@ -60,6 +60,11 @@ race_counts = weight_filtered_df['race'].value_counts().reset_index()
 filtered_df = weight_filtered_df # variable which is totally filtered # TODO: combine all filters in this variable
 race_counts.columns = ['race', 'count']  # rename columns for Altair
 
+
+race_selection = alt.selection_point(fields=['race'], toggle=True)
+base = alt.Chart(filtered_df)
+
+
 min_cooccurrence = st.sidebar.slider(
     "Minimum co-occurrence",
     min_value=10,
@@ -106,7 +111,7 @@ def render_main_view():
 
     col2.metric("Overall Readmission Rate", f"{total_readmission_rate:.2f}%", border=True)
         
-    race_count = get_barchart(race_counts)
+    race_count = get_barchart(race_counts, race_selection)
 
     col1, col2 = st.columns(2)
     # overview plot
@@ -124,15 +129,7 @@ def render_main_view():
         event = st.altair_chart(upset_plot)
     # medication chart
 
-
-
-
-
-    with col1:
-        fig1, ax1 = plt.subplots()
-        st.altair_chart(get_piechart(filtered_df, readmission_type, selected_medications))
-        st.altair_chart(race_count)
-
+    stacked_bar_chart = getStackedBarChart(filtered_df, readmission_type, race_selection=race_selection)
 
     with col2:
         G = build_graph(filtered_df, min_cooccurrence, readmission_type, selected_medications)
@@ -143,9 +140,18 @@ def render_main_view():
             net.save_graph(tmp.name)
 
             st.components.v1.html(open(tmp.name).read(), height=800)
-        if (selected_medications.__len__() > 1):
-            st.altair_chart(getMosaic(filtered_df, readmission_type, selected_medications))
-        else:
-            st.altair_chart(getStackedBarChart(filtered_df, readmission_type))
+
+    fig1, ax1 = plt.subplots()
+    race_count = race_count + alt.Chart(pd.DataFrame({'dummy': [0]})).mark_point(opacity=0)
+    pie_chart = get_piechart(filtered_df, readmission_type, selected_medications, race_selection=race_selection)
+    pie_chart = pie_chart + alt.Chart(pd.DataFrame({'dummy': [0]})).mark_point(opacity=0)
+
+
+    if (selected_medications.__len__() > 1):
+        st.altair_chart((race_count | pie_chart | getMosaic(filtered_df, readmission_type, selected_medications, race_selection=race_selection)).resolve_scale(color='shared'), use_container_width=True)
+    else:
+        st.altair_chart( (race_count | pie_chart | stacked_bar_chart).resolve_scale(color='shared'), use_container_width=True)
+
+
 
 render_main_view()
