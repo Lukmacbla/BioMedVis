@@ -3,6 +3,7 @@ import pandas as pd
 
 from globals import primary_color
 from utils import color_utils
+import re
 
 
 def get_barchart(race_counts, selection):
@@ -73,10 +74,8 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
             theta="sum(count):Q",
             color=alt.Color("readmission_label:N",
                             scale=alt.Scale(domain=color_domain, range=color_range)),
-            tooltip=[
-                alt.Tooltip("readmission_label:N"),
-                alt.Tooltip("sum(count):Q", title="Count")
-            ],
+            tooltip=['readmission_label:N','count:Q', 'race:N'],
+
         )
         .properties(width=500, height=500)
     )
