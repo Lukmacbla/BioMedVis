@@ -18,7 +18,7 @@ def get_barchart(race_counts, selection):
             y='count:Q',
             color=alt.condition(selection, alt.value(highlight_color), alt.value(default_color)),
             tooltip=['race:N','count:Q']
-        ).properties(width=200, height=500)
+        ).properties(width=150, height=500)
         .add_params(selection)
         .properties(title='Patient count per race')
     )
@@ -77,7 +77,7 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
             tooltip=['readmission_label:N','count:Q', 'race:N'],
 
         )
-        .properties(width=500, height=500)
+        .properties(width=250, height=350)
     )
     return pie_chart
 
@@ -206,7 +206,7 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
                 alt.Tooltip("sum(count):Q", title="Count")
             ]
         )
-        .properties(width=1000, height=500)
+        .properties(width=600, height=350)
     )
     return chart
 
@@ -288,7 +288,7 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
                 alt.Tooltip("n:Q", title="Patients (denominator)")
             ]
         )
-        .properties(width=1000, height=500)
+        .properties(width=600, height=350)
     )
 
     return heatmap
