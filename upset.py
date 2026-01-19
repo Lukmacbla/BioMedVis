@@ -34,12 +34,12 @@ def getUpsetPlot(raw_data, med_cols):
   ).add_params(
       selection
   ).properties(
-      width=150,
+      width=100,
       height=med_cols.__len__() * height_per_medication,
   )
 
   spacer = alt.Chart(pd.DataFrame({'x': [0]})).mark_text().encode().properties(
-      width=150,
+      width=100,
       height=100
   )
 
