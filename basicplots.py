@@ -285,7 +285,7 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
                 alt.Tooltip("diagnosis_category:N", title="Diagnosis category"),
                 alt.Tooltip("medication:N", title="Medication"),
                 alt.Tooltip("mean_used:Q", title="Percentage", format=".1%"),
-                alt.Tooltip("n:Q", title="Patients (denominator)")
+                alt.Tooltip("n:Q", title="Patients")
             ]
         )
         .properties(width=600, height=350)
