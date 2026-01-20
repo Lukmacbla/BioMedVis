@@ -17,6 +17,20 @@ def load_data():
             if (df[c] != "No").sum() > 100
     ]
     return df, medication_column_names_filtered
+
+@st.cache_data(show_spinner=True)
+def load_data_full():
+    df = pd.read_csv("data/diabetic_data.csv")
+
+    # Filter medication columns correctly and efficiently
+    medication_column_names = df.columns[24-17:47-17].tolist()
+    #medication_column_names = df.columns[24:47].tolist()
+    medication_column_names_filtered = [
+        c for c in medication_column_names
+            if (df[c] != "No").sum() > 100
+    ]
+    return df, medication_column_names_filtered
+
 @st.cache_data(show_spinner=False)
 def prepare_df(df: pd.DataFrame, med_cols_all=None) -> pd.DataFrame:
     df = df.copy()
