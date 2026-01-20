@@ -1,14 +1,15 @@
-from pyvis.network import Network
 import streamlit as st
 import pandas as pd
 import altair as alt
 
-import matplotlib.pyplot as plt
-from basicplots import get_barchart, get_piechart, getStackedBarChart, getMosaic
-from cluster import render_graph, build_graph
-from filters import load_data_full, prepare_df, filter_all
-from upset import getUpsetPlot
-from overviewPlots import getOverviewPlots
+
+from filters import load_data_full
+from globals import primary_color
+from utils import color_utils
+
+color_full = primary_color
+color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
+color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
 
 st.set_page_config(page_title="Correlations", page_icon="📊", layout="wide")
 
@@ -18,19 +19,16 @@ This section explores correlations between different metrics and their impact on
 Data on this page includes a random subset of 10,000 records for performance reasons.
 """)
 
+
 # Cached preprocessing function
 @st.cache_data(show_spinner="Loading and preprocessing data...")
 def load_and_preprocess_data(sample_size=10000):
-    """Load data and preprocess for correlation analysis"""
     dataframe, medication_column_names_filtered = load_data_full()
-    
-    # Sample the data for better performance
+
     if len(dataframe) > sample_size:
         dataframe = dataframe.sample(n=sample_size, random_state=42)
-    
-    # Convert age ranges to numeric midpoints
+
     def age_to_midpoint(age_str):
-        """Convert age range string like '[30-40)' to midpoint 35"""
         if pd.isna(age_str):
             return None
         age_str = str(age_str).strip()
@@ -43,10 +41,9 @@ def load_and_preprocess_data(sample_size=10000):
             except:
                 return None
         return None
-    
+
     dataframe['age_midpoint'] = dataframe['age'].apply(age_to_midpoint)
-    
-    # Keep only necessary columns
+
     columns_to_keep = [
         'readmitted',
         'time_in_hospital',
@@ -57,75 +54,67 @@ def load_and_preprocess_data(sample_size=10000):
         'gender',
         'age_midpoint'
     ]
-    
+
     dataframe_filtered = dataframe[columns_to_keep].copy()
-    
+
     return dataframe_filtered
 
-# Load data
+
 dataframe = load_and_preprocess_data()
 
-# Create a brush selection that will be shared across all charts - bind to scales for zoom
 brush = alt.selection_interval(bind='scales', name='brush')
 
-# Color scheme for readmission status
 readmission_colors = alt.Scale(
     domain=['NO', '<30', '>30'],
-    range=['#2ecc71', '#e74c3c', '#f39c12']
+    range=[color_light, color_medium, color_full]
 )
 
 st.header("Relations between Metrics and Readmission Rates")
-st.caption("Scroll to zoom into the data. Double-click to reset zoom. Point size indicates number of encounters. Color shows readmission rate at that location.")
+st.caption(
+    "Scroll to zoom into the data. Double-click to reset zoom. Point size indicates number of encounters. Color shows readmission rate at that location.")
 
 SCATTER_HEIGHT = 450
 
-# Create base chart configuration with aggregation
+
 def create_scatter_aggregated(data, x_field, y_field, x_title, y_title, title):
-    """Helper function to create scatter plots with aggregated overlapping points"""
-    # First aggregate by x, y, and readmission status
     agg_data = data.groupby([x_field, y_field, 'readmitted']).size().reset_index(name='count')
-    
-    # Now aggregate again to get one point per (x,y) location
+
     location_stats = agg_data.groupby([x_field, y_field]).agg({
-        'count': 'sum'  # total encounters at this location
+        'count': 'sum'
     }).reset_index()
     location_stats.rename(columns={'count': 'total_count'}, inplace=True)
-    
-    # Calculate readmission counts for each location
+
     readmit_pivot = agg_data.pivot_table(
-        index=[x_field, y_field], 
-        columns='readmitted', 
-        values='count', 
+        index=[x_field, y_field],
+        columns='readmitted',
+        values='count',
         fill_value=0
     ).reset_index()
-    
-    # Merge stats
+
     location_stats = location_stats.merge(readmit_pivot, on=[x_field, y_field])
-    
-    # Calculate readmission rate (any readmission)
+
     if '<30' in location_stats.columns and '>30' in location_stats.columns:
         location_stats['readmission_rate'] = (
-            (location_stats['<30'] + location_stats['>30']) / location_stats['total_count'] * 100
+                (location_stats['<30'] + location_stats['>30']) / location_stats['total_count'] * 100
         )
     else:
         location_stats['readmission_rate'] = 0
-    
-    # Prepare tooltip data
+
     location_stats['NO_pct'] = (location_stats.get('NO', 0) / location_stats['total_count'] * 100).round(1)
     location_stats['<30_pct'] = (location_stats.get('<30', 0) / location_stats['total_count'] * 100).round(1)
     location_stats['>30_pct'] = (location_stats.get('>30', 0) / location_stats['total_count'] * 100).round(1)
-    
+
     return alt.Chart(location_stats).mark_circle(opacity=0.8, stroke='white', strokeWidth=0.5).encode(
         x=alt.X(f'{x_field}:Q', title=x_title, scale=alt.Scale(zero=False)),
         y=alt.Y(f'{y_field}:Q', title=y_title, scale=alt.Scale(zero=False)),
-        size=alt.Size('total_count:Q', 
-                     title='Number of Encounters',
-                     scale=alt.Scale(range=[30, 1000]),
-                     legend=alt.Legend(orient='bottom')),
-        color=alt.Color('readmission_rate:Q', 
-                       title='Readmission Rate (%)',
-                       scale=alt.Scale(scheme='redyellowgreen', domain=[60, 0], reverse=False),
-                       legend=alt.Legend(orient='right')),
+        size=alt.Size('total_count:Q',
+                      title='Number of Encounters',
+                      scale=alt.Scale(range=[30, 1000]),
+                      legend=alt.Legend(orient='bottom')),
+        color=alt.Color('readmission_rate:Q',
+                        title='Readmission Rate (%)',
+                        scale=alt.Scale(scheme='redyellowgreen', domain=[60, 0], reverse=False),
+                        legend=alt.Legend(orient='right')),
         tooltip=[
             alt.Tooltip(f'{x_field}:Q', title=x_title),
             alt.Tooltip(f'{y_field}:Q', title=y_title),
@@ -143,7 +132,7 @@ def create_scatter_aggregated(data, x_field, y_field, x_title, y_title, title):
         title=title
     )
 
-# Row 1: Medication Count correlations
+
 col1, col2 = st.columns(2)
 
 with col1:
@@ -168,7 +157,6 @@ with col2:
     )
     st.altair_chart(chart2, use_container_width=True)
 
-# Row 2: Healthcare intensity and age analysis
 col3, col4 = st.columns(2)
 
 with col3:
@@ -183,7 +171,6 @@ with col3:
     st.altair_chart(chart3, use_container_width=True)
 
 with col4:
-    # Filter out null age midpoints
     age_df = dataframe[dataframe['age_midpoint'].notna()]
     chart4 = create_scatter_aggregated(
         age_df,
@@ -195,10 +182,8 @@ with col4:
     )
     st.altair_chart(chart4, use_container_width=True)
 
-# Summary statistics section
 st.header("Correlations Summary")
 
-# Calculate correlations
 correlations = pd.DataFrame({
     'Correlation': [
         dataframe[['num_medications', 'time_in_hospital']].corr().iloc[0, 1],
@@ -225,27 +210,22 @@ with col_stat1:
 
 with col_stat2:
     st.subheader("Key Insights")
-    
-    # Find strongest correlation
+
     strongest_idx = correlations['Correlation'].abs().idxmax()
     strongest_val = correlations.loc[strongest_idx, 'Correlation']
-    
+
     st.metric(
         "Strongest Correlation",
         f"{strongest_val:.3f}",
         border=True,
     )
-    
-    # Average medication count by readmission status
-    med_by_readmit = dataframe.groupby('readmitted')['num_medications'].mean()
-    
 
-# Additional analysis: Readmission rates by medication count bins
+    med_by_readmit = dataframe.groupby('readmitted')['num_medications'].mean()
+
 st.header("Readmission Rate by Medication Count")
 
-# Bin medication counts
 dataframe['med_count_bin'] = pd.cut(
-    dataframe['num_medications'], 
+    dataframe['num_medications'],
     bins=[0, 5, 10, 15, 20, 100],
     labels=['0-5', '6-10', '11-15', '16-20', '20+']
 )

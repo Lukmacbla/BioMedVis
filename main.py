@@ -1,38 +1,27 @@
 import tempfile
 
-from pyvis.network import Network
 import streamlit as st
 import pandas as pd
 import altair as alt
 
-import matplotlib.pyplot as plt
 from basicplots import get_barchart, get_piechart, getStackedBarChart, getMosaic
 from cluster import render_graph, build_graph
 from filters import load_data, prepare_df, filter_all
 from upset import getUpsetPlot
 from overviewPlots import getOverviewPlots
 
+
 # Running the Streamlit app
 # streamlit run app.py
 
 def main():
-    # Config the settings of the page
     st.set_page_config(page_title="Diabetic Medication Analysis Dashboard", page_icon="📊", layout="wide")
     st.title("Diabetic Medication Analysis Dashboard")
     st.markdown("Analyze medication strategies and their impact on clinical readmission rates.")
 
-
-    # -------------------------------
-    # 1) Data loading and caching
-    # -------------------------------
-
     dataframe, medication_column_names_filtered = load_data()
     df_prep = prepare_df(dataframe, med_cols_all=medication_column_names_filtered)
 
-
-    # -------------------------------
-    # 2) Sidebar controls
-    # -------------------------------
     st.sidebar.title("Filter Options")
 
     st.sidebar.subheader("Patient Demographics")
@@ -44,7 +33,6 @@ def main():
         value=(0, 100),
         step=10
     )
-
 
     weight_container = st.sidebar.container(border=True)
 
@@ -72,9 +60,7 @@ def main():
     race_counts = filtered_df['race'].value_counts().reset_index()
     race_counts.columns = ['race', 'count']  # rename columns for Altair
 
-
     race_selection = alt.selection_point(fields=['race'], toggle=True)
-    base = alt.Chart(filtered_df)
 
     cluster_container = st.sidebar.container(border=True)
     with cluster_container:
@@ -92,9 +78,6 @@ def main():
         ["Medication frequency", "Readmission risk"]
     )
 
-    # -------------------------------
-    # 3) Main Graph Views
-    # -------------------------------
     def render_main_view():
         col_left, col_right = st.columns(2)
         with col_left:
@@ -108,12 +91,12 @@ def main():
             st.warning("No medications available with more than 100 patients. Please adjust the medication selection.")
             st.stop()
             return
-        
+
         if selected_medications.__len__() == 0:
             st.warning("No medications selected. Please select at least one medication.")
             st.stop()
             return
-        
+
         col1, col2, col3, col4 = st.columns(4)
 
         col1.metric("Total Encounters", f"{filtered_df.shape[0]}", border=True)
@@ -123,10 +106,12 @@ def main():
         col2.metric("Overall Readmission Rate", f"{total_readmission_rate:.2f}%", border=True)
 
         with col3:
-            st.metric("Number of Features", f"{len(dataframe.columns)}", border=True, help="Some features from the original dataset were removed during preprocessing.")
+            st.metric("Number of Features", f"{len(dataframe.columns)}", border=True,
+                      help="Some features from the original dataset were removed during preprocessing.")
         with col4:
-            st.metric("Selected Medications", f"{len(selected_medications)}", border=True, help="Medications with low occurrence were excluded.")
-            
+            st.metric("Selected Medications", f"{len(selected_medications)}", border=True,
+                      help="Medications with low occurrence were excluded.")
+
         race_count = get_barchart(race_counts, race_selection)
 
         col1, col2 = st.columns(2)
@@ -143,10 +128,7 @@ def main():
             else:
                 upset_plot = getUpsetPlot(filtered_df, selected_medications)
 
-            # event = st.altair_chart(upset_plot, use_container_width=False, on_select="rerun")
                 st.altair_chart(upset_plot)
-        # medication chart
-
 
         stacked_bar_chart = getStackedBarChart(filtered_df, readmission_type, race_selection=race_selection)
 
@@ -165,20 +147,19 @@ def main():
                         net.save_graph(tmp.name)
                         st.components.v1.html(open(tmp.name).read(), height=800)
 
-        fig1, ax1 = plt.subplots()
         race_count = race_count + alt.Chart(pd.DataFrame({'dummy': [0]})).mark_point(opacity=0)
         pie_chart = get_piechart(filtered_df, readmission_type, selected_medications, race_selection=race_selection)
-        #pie_chart = pie_chart + alt.Chart(pd.DataFrame({'dummy': [0]})).mark_point(opacity=0)
-
-        #pie_chart = pie_chart + tooltip_layer
-
 
         if (selected_medications.__len__() > 1):
-            st.altair_chart((race_count | pie_chart |getMosaic(filtered_df, readmission_type, selected_medications, race_selection=race_selection)).resolve_scale(color='independent'), use_container_width=True)
+            st.altair_chart((race_count | pie_chart | getMosaic(filtered_df, readmission_type, selected_medications,
+                                                                race_selection=race_selection)).resolve_scale(
+                color='independent'), use_container_width=True)
         else:
-            st.altair_chart( (race_count | pie_chart | stacked_bar_chart).resolve_scale(color='shared'), use_container_width=True)
+            st.altair_chart((race_count | pie_chart | stacked_bar_chart).resolve_scale(color='shared'),
+                            use_container_width=True)
 
     render_main_view()
+
 
 pages = {
     "Navigation": [

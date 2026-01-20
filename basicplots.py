@@ -1,17 +1,16 @@
 import altair as alt
-import pandas as pd
 
 from globals import primary_color
 from utils import color_utils
-import re
 
 color_full = primary_color
 color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
 color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
 
+
 def get_barchart(race_counts, selection):
-    highlight_color = "black"  # selected bar color
-    default_color = "lightgray"   # unselected bar color
+    highlight_color = "black"
+    default_color = "lightgray"
 
     return (
         alt.Chart(race_counts)
@@ -20,11 +19,12 @@ def get_barchart(race_counts, selection):
             x='race:N',
             y='count:Q',
             color=alt.condition(selection, alt.value(highlight_color), alt.value(default_color)),
-            tooltip=['race:N','count:Q']
+            tooltip=['race:N', 'count:Q']
         ).properties(width=150, height=500)
         .add_params(selection)
         .properties(title='Patient count per race')
     )
+
 
 def get_piechart(df, readmission_type, med_cols, race_selection=None):
     df_work = df.copy()
@@ -42,7 +42,6 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
         color_domain = ["NO", "<30"]
         color_range = [color_light, color_full]
 
-    # Only add selection    if passed
     if race_selection is not None:
         base = base.add_params(race_selection).transform_filter(race_selection)
 
@@ -55,7 +54,6 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
                     '>30'
                 """
         )
-        # Aggregation happens after filtering, and we keep race column
         .transform_aggregate(
             count='count()',
             groupby=['readmission_label', 'race']
@@ -72,8 +70,10 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
     )
     return pie_chart
 
+
 import pandas as pd
 import re
+
 
 def icd9_to_category(code: str) -> str:
     """Map an ICD-9(-CM) diagnosis code (001-999, V, E) to a high-level category."""
@@ -133,6 +133,7 @@ def icd9_to_category(code: str) -> str:
     else:
         return "Unknown"
 
+
 def getStackedBarChart(df, readmission_type, race_selection=None):
     diag_cat_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
     diag_cols = ["diag_1", "diag_2", "diag_3"]
@@ -178,8 +179,9 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
                     axis=alt.Axis(labelLimit=500)),
             y=alt.Y("sum(count):Q", title="Proportion of patients", stack="normalize"),
             color=alt.Color("readmitted:N", title="Readmission status",
-                            scale=alt.Scale(domain=["NO","<30"] if readmission_type!="Any" else ["NO","<30",">30"],
-                                            range=[color_light, color_full] if readmission_type!="Any" else [color_light, color_medium, color_full])),
+                            scale=alt.Scale(domain=["NO", "<30"] if readmission_type != "Any" else ["NO", "<30", ">30"],
+                                            range=[color_light, color_full] if readmission_type != "Any" else [
+                                                color_light, color_medium, color_full])),
             tooltip=[
                 alt.Tooltip("icd9_category:N", title="Diagnosis category"),
                 alt.Tooltip("readmitted:N", title="Readmitted"),

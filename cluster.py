@@ -1,16 +1,13 @@
-import pandas as pd
-import numpy as np
+
 import networkx as nx
 from pyvis.network import Network
 import streamlit as st
-import tempfile
-
 
 
 @st.cache_data
 def build_graph(df, min_cooccurrence, readmission_type, med_cols):
     taken_medication = (df[med_cols] != "No").astype(int)
-    # Readmission definition
+
     if readmission_type == "Any":
         readmit = df["readmitted"].isin([">30", "<30"]).astype(int)
     else:
@@ -25,7 +22,6 @@ def build_graph(df, min_cooccurrence, readmission_type, med_cols):
     co_matrix = (taken_medication.T @ taken_medication).to_numpy()
 
     G = nx.Graph()
-
     for med in med_cols:
         freq = int(med_freq[med])
         readmit_value = float(med_readmit[med])
@@ -43,6 +39,7 @@ def build_graph(df, min_cooccurrence, readmission_type, med_cols):
                 G.add_edge(m1, m2, value=value)
 
     return G
+
 
 def render_graph(G, size_mode):
     net = Network(height="750px", width="100%")
@@ -66,7 +63,7 @@ def render_graph(G, size_mode):
             node["size"] = float(10 + readmit * 40)
 
         node["color"] = (
-            f"rgba({int(255*readmit)}, {int(255*(1-readmit))}, 0, 0.85)"
+            f"rgba({int(255 * readmit)}, {int(255 * (1 - readmit))}, 0, 0.85)"
         )
 
         node["title"] = (
