@@ -1,4 +1,6 @@
 import altair as alt
+import pandas as pd
+import re
 
 from globals import primary_color
 from utils import color_utils
@@ -30,9 +32,6 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
     df_work = df.copy()
     df_work[med_cols] = df_work[med_cols].replace("?", pd.NA).replace({"No": 0, "Up": 1, "Down": 1, "Steady": 1})
     df_work = df_work[df_work[med_cols].isin([1]).any(axis=1)]
-    color_full = primary_color
-    color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
-    color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
 
     base = alt.Chart(df_work)
     if readmission_type == "Any":
@@ -48,11 +47,7 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
     pie_chart = (
         base
         .transform_calculate(
-            readmission_label="""
-                    datum.readmitted == 'NO' ? 'NO' :
-                    datum.readmitted == '<30' ? '<30' :
-                    '>30'
-                """
+            readmission_label="datum.readmitted == 'NO' ? 'NO' : datum.readmitted == '<30' ? '<30' : '>30'"
         )
         .transform_aggregate(
             count='count()',
@@ -69,11 +64,6 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
         .properties(width=500, height=500)
     )
     return pie_chart
-
-
-import pandas as pd
-import re
-
 
 def icd9_to_category(code: str) -> str:
     """Map an ICD-9(-CM) diagnosis code (001-999, V, E) to a high-level category."""
@@ -146,7 +136,6 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
     for col in diag_cols:
         df_work[f"{col}_cat"] = df_work[col].apply(icd9_to_category)
 
-    # Long form, then pre-aggregate by race/readmitted/icd9_category
     df_long = (
         df.melt(
             id_vars=["readmitted", "race"],
@@ -170,15 +159,19 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
     if race_selection is not None:
         base = base.add_params(race_selection).transform_filter(race_selection)
 
-    # colors omitted for brevity; keep your existing scale setup
     chart = (
         base
         .mark_bar()
         .encode(
-            x=alt.X("icd9_category:N", title="Diagnosis category", sort="-y",
+            x=alt.X("icd9_category:N",
+                    title="Diagnosis category",
+                    sort="-y",
                     axis=alt.Axis(labelLimit=500)),
-            y=alt.Y("sum(count):Q", title="Proportion of patients", stack="normalize"),
-            color=alt.Color("readmitted:N", title="Readmission status",
+            y=alt.Y("sum(count):Q",
+                    title="Proportion of patients",
+                    stack="normalize"),
+            color=alt.Color("readmitted:N",
+                            title="Readmission status",
                             scale=alt.Scale(domain=["NO", "<30"] if readmission_type != "Any" else ["NO", "<30", ">30"],
                                             range=[color_light, color_full] if readmission_type != "Any" else [
                                                 color_light, color_medium, color_full])),
@@ -194,17 +187,15 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
 
 
 def getMosaic(df, readmission_type, med_cols, race_selection=None):
-    # Use precomputed diagnosis categories and med_bin columns
     diag_cat_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
     bin_cols = [f"{c}_bin" for c in med_cols]
-    # Map medication statuses to binary indicator
+
     map_dict = {"No": 0, "Up": 1, "Down": 1, "Steady": 1}
     diag_cols = ["diag_1", "diag_2", "diag_3"]
     used_cols = med_cols + ["race"] + diag_cols
-    df_work = df.copy()
+    df_work = df[used_cols].copy()
     df_work[med_cols] = df_work[med_cols].replace("?", pd.NA).replace(map_dict)
 
-    # Long table: 1 row per diagnosis category occurrence
     df_diag_long = (
         df.melt(
             id_vars=["race"] + bin_cols,
@@ -215,7 +206,6 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
         .dropna(subset=["diagnosis_category"])
     )
 
-    # Aggregate: mean usage per med by (race, diagnosis_category)
     agg_means = df_diag_long.groupby(["race", "diagnosis_category"], as_index=False)[bin_cols].mean()
     agg_counts = (
         df_diag_long.groupby(["race", "diagnosis_category"], as_index=False)
@@ -223,14 +213,12 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
     )
     agg = agg_means.merge(agg_counts, on=["race", "diagnosis_category"], how="left")
 
-    # Melt back to long
     agg_long = agg.melt(
         id_vars=["race", "diagnosis_category", "n"],
         value_vars=bin_cols,
         var_name="med_bin",
         value_name="mean_used"
     )
-    # Recover nice medication names
     agg_long["medication"] = agg_long["med_bin"].str.replace("_bin$", "", regex=True)
 
     base = alt.Chart(agg_long)

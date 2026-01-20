@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
-
 from filters import load_data_full
 from globals import primary_color
 from utils import color_utils
