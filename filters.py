@@ -104,7 +104,8 @@ def filter_by_readmission(df: pd.DataFrame, selectedType):
         print("using any")
         return df
     print("using selected type: " + selectedType)
-    return df[df["readmitted"].isin(["<30", "NO"])]
+    #return df[df["readmitted"].isin(["<30", "NO"])]
+    return df[df["readmitted"].replace(">30", "NO", inplace=True)]
 
 
 def filter_all(df, age_range, weight_range, include_unknown_weight=True, readmission_type="Any"):
@@ -126,6 +127,8 @@ def filter_all(df, age_range, weight_range, include_unknown_weight=True, readmis
         mask_readm = pd.Series(True, index=df.index)
     else:
         # Keep only NO and <30
+        #mask_readm = df["readmitted"].isin(["NO", "<30"])
+        df["readmitted"].replace(">30", "NO", inplace=True)
         mask_readm = df["readmitted"].isin(["NO", "<30"])
 
     mask = mask_age & mask_weight & mask_readm

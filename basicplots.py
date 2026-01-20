@@ -44,6 +44,9 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
             return "<30"
         else:
             return ">30"
+
+    if readmission_type != "Any":
+        df_work["readmitted"].replace(">30", "NO", inplace=True)
     df_work["readmission_label"] = df_work["readmitted"].map(label)
 
     counts = (
@@ -155,6 +158,8 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
     used_cols = diag_cols + ["readmitted", "race"]
 
     df_work = df[used_cols].copy()
+    if readmission_type != "Any":
+        df_work["readmitted"].replace(">30", "NO", inplace=True)
     df_work[diag_cols] = df_work[diag_cols].replace("?", pd.NA)
     for col in diag_cols:
         df_work[f"{col}_cat"] = df_work[col].apply(icd9_to_category)
