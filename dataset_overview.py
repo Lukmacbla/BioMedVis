@@ -17,6 +17,24 @@ st.markdown("""
 This section provides an overview of the diabetic dataset used for analysis.
 """)
 
+with st.expander("Dataset Source"):
+    st.markdown("""
+    ### Data Source
+    
+    **Dataset Name:** Diabetes 130-US Hospitals for Years 1999-2008
+    
+    **Source:** https://archive.ics.uci.edu/dataset/296/diabetes+130-us+hospitals+for+years+1999-2008
+    
+    **Citation:** 
+    ```
+    Strack, B., DeShazo, J. P., Gennings, C., Olmo, J. L., Ventura, S., Cios, K. J., & Clore, J. N. (2014).
+    Impact of HbA1c Measurement on Hospital Readmission Rates: Analysis of 70,000 Clinical Database Patient Records.
+    BioMed Research International, 2014(1), 781670. https://doi.org/10.1155/2014/781670
+    ```
+    
+    **License:** Commons Attribution 4.0 International (CC BY 4.0)
+    """)
+
 dataframe, medication_column_names_filtered = load_data_full()
 
 # Display basic dataset info
