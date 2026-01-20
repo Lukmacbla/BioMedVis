@@ -1,7 +1,8 @@
 import altair as alt
+import pandas as pd
 
 from globals import primary_color
-from utils import color_utils
+from utils import color_utils, icd9_to_category
 
 color_full = primary_color
 color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
@@ -71,69 +72,6 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
     return pie_chart
 
 
-import pandas as pd
-import re
-
-
-def icd9_to_category(code: str) -> str:
-    """Map an ICD-9(-CM) diagnosis code (001-999, V, E) to a high-level category."""
-    if pd.isna(code):
-        return "Unknown"
-
-    code_str = str(code).strip().upper()
-
-    # V codes: factors influencing health status / contact with health services
-    if code_str.startswith("V"):
-        return "Factors influencing health status / contact with health services"
-
-    # E codes: external causes of injury/poisoning
-    if code_str.startswith("E"):
-        return "External causes of injury and poisoning"
-
-    # Otherwise treat as numeric 001–999
-    m = re.match(r"(\d+)", code_str)
-    if not m:
-        return "Unknown"
-    num = int(m.group(1))
-
-    if 1 <= num <= 139:
-        return "Infectious and parasitic"
-    elif 140 <= num <= 239:
-        return "Neoplasms"
-    elif 240 <= num <= 279:
-        return "Endocrine, nutritional, metabolic, immunity"
-    elif 280 <= num <= 289:
-        return "Diseases of the blood"
-    elif 290 <= num <= 319:
-        return "Mental disorders"
-    elif 320 <= num <= 389:
-        return "Nervous system and sense organs"
-    elif 390 <= num <= 459:
-        return "Circulatory system"
-    elif 460 <= num <= 519:
-        return "Respiratory system"
-    elif 520 <= num <= 579:
-        return "Digestive system"
-    elif 580 <= num <= 629:
-        return "Genitourinary system"
-    elif 630 <= num <= 679:
-        return "Pregnancy, childbirth, puerperium"
-    elif 680 <= num <= 709:
-        return "Skin and subcutaneous tissue"
-    elif 710 <= num <= 739:
-        return "Musculoskeletal and connective tissue"
-    elif 740 <= num <= 759:
-        return "Congenital anomalies"
-    elif 760 <= num <= 779:
-        return "Perinatal conditions"
-    elif 780 <= num <= 799:
-        return "Symptoms, signs, ill-defined"
-    elif 800 <= num <= 999:
-        return "Injury and poisoning"
-    else:
-        return "Unknown"
-
-
 def getStackedBarChart(df, readmission_type, race_selection=None):
     diag_cat_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
     diag_cols = ["diag_1", "diag_2", "diag_3"]
@@ -146,7 +84,6 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
     for col in diag_cols:
         df_work[f"{col}_cat"] = df_work[col].apply(icd9_to_category)
 
-    # Long form, then pre-aggregate by race/readmitted/icd9_category
     df_long = (
         df.melt(
             id_vars=["readmitted", "race"],
@@ -170,7 +107,6 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
     if race_selection is not None:
         base = base.add_params(race_selection).transform_filter(race_selection)
 
-    # colors omitted for brevity; keep your existing scale setup
     chart = (
         base
         .mark_bar()
@@ -194,17 +130,15 @@ def getStackedBarChart(df, readmission_type, race_selection=None):
 
 
 def getMosaic(df, readmission_type, med_cols, race_selection=None):
-    # Use precomputed diagnosis categories and med_bin columns
     diag_cat_cols = ["diag_1_cat", "diag_2_cat", "diag_3_cat"]
     bin_cols = [f"{c}_bin" for c in med_cols]
-    # Map medication statuses to binary indicator
+
     map_dict = {"No": 0, "Up": 1, "Down": 1, "Steady": 1}
     diag_cols = ["diag_1", "diag_2", "diag_3"]
     used_cols = med_cols + ["race"] + diag_cols
     df_work = df.copy()
     df_work[med_cols] = df_work[med_cols].replace("?", pd.NA).replace(map_dict)
 
-    # Long table: 1 row per diagnosis category occurrence
     df_diag_long = (
         df.melt(
             id_vars=["race"] + bin_cols,
@@ -215,7 +149,6 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
         .dropna(subset=["diagnosis_category"])
     )
 
-    # Aggregate: mean usage per med by (race, diagnosis_category)
     agg_means = df_diag_long.groupby(["race", "diagnosis_category"], as_index=False)[bin_cols].mean()
     agg_counts = (
         df_diag_long.groupby(["race", "diagnosis_category"], as_index=False)
@@ -223,14 +156,13 @@ def getMosaic(df, readmission_type, med_cols, race_selection=None):
     )
     agg = agg_means.merge(agg_counts, on=["race", "diagnosis_category"], how="left")
 
-    # Melt back to long
     agg_long = agg.melt(
         id_vars=["race", "diagnosis_category", "n"],
         value_vars=bin_cols,
         var_name="med_bin",
         value_name="mean_used"
     )
-    # Recover nice medication names
+
     agg_long["medication"] = agg_long["med_bin"].str.replace("_bin$", "", regex=True)
 
     base = alt.Chart(agg_long)
