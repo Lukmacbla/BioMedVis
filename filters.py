@@ -1,8 +1,7 @@
 import streamlit as st
-
 import pandas as pd
 
-from basicplots import icd9_to_category
+from utils import icd9_to_category
 
 
 @st.cache_data(show_spinner=True)
