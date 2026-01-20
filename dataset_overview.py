@@ -97,7 +97,7 @@ race_chart = alt.Chart(race_counts).mark_bar().encode(
     tooltip=['race', 'count']
 ).properties(
     title='Ethnicity Distribution',
-    height=300
+    height=500
 )
 
 demo_col1, demo_col2 = st.columns(2)
