@@ -58,7 +58,7 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
             theta='count:Q',
             color=alt.Color('readmission_label:N',
                             scale=alt.Scale(domain=color_domain, range=color_range)),
-            tooltip=['readmission_label:N', 'count:Q'],
+            tooltip=['readmission_label:N', 'count:Q', 'race:N'],
 
         )
         .properties(width=500, height=500)
