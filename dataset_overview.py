@@ -151,11 +151,16 @@ st.header("Healthcare Utilization")
 util_col1, util_col2, util_col3 = st.columns(3)
 
 with util_col1:
-    # Number of Lab Procedures
-    lab_hist = alt.Chart(filtered_df).mark_bar().encode(
-        x=alt.X('num_lab_procedures:Q', bin=alt.Bin(maxbins=20), title='Lab Procedures'),
-        y=alt.Y('count():Q', title='Encounters'),
-        tooltip=[alt.Tooltip('num_lab_procedures:Q', bin=alt.Bin(maxbins=20)), 'count()']
+    # Number of Lab Procedures - precompute bins
+    lab_bins = pd.cut(filtered_df['num_lab_procedures'], bins=20)
+    lab_counts = lab_bins.value_counts().sort_index().reset_index()
+    lab_counts.columns = ['bin', 'count']
+    lab_counts['bin_mid'] = lab_counts['bin'].apply(lambda x: x.mid)
+    
+    lab_hist = alt.Chart(lab_counts).mark_bar().encode(
+        x=alt.X('bin_mid:Q', title='Lab Procedures'),
+        y=alt.Y('count:Q', title='Encounters'),
+        tooltip=[alt.Tooltip('bin_mid:Q', title='Lab Procedures', format='.1f'), 'count']
     ).properties(
         title='Lab Procedures Distribution',
         height=250
@@ -163,11 +168,16 @@ with util_col1:
     st.altair_chart(lab_hist)
 
 with util_col2:
-    # Number of Medications
-    med_hist = alt.Chart(filtered_df).mark_bar().encode(
-        x=alt.X('num_medications:Q', bin=alt.Bin(maxbins=20), title='Medications'),
-        y=alt.Y('count():Q', title='Encounters'),
-        tooltip=[alt.Tooltip('num_medications:Q', bin=alt.Bin(maxbins=20)), 'count()']
+    # Number of Medications - precompute bins
+    med_bins = pd.cut(filtered_df['num_medications'], bins=20)
+    med_counts = med_bins.value_counts().sort_index().reset_index()
+    med_counts.columns = ['bin', 'count']
+    med_counts['bin_mid'] = med_counts['bin'].apply(lambda x: x.mid)
+    
+    med_hist = alt.Chart(med_counts).mark_bar().encode(
+        x=alt.X('bin_mid:Q', title='Medications'),
+        y=alt.Y('count:Q', title='Encounters'),
+        tooltip=[alt.Tooltip('bin_mid:Q', title='Medications', format='.1f'), 'count']
     ).properties(
         title='Medications per Encounter',
         height=250
