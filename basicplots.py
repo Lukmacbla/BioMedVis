@@ -27,69 +27,50 @@ def get_barchart(race_counts, selection):
     )
 
 def get_piechart(df, readmission_type, med_cols, race_selection=None):
-    used_cols = med_cols + ["readmitted", "race"]
-    df_work = df[used_cols].copy()
-    df_work[med_cols] = (
-        df_work[med_cols]
-        .replace("?", pd.NA)
-        .replace({"No": 0, "Up": 1, "Down": 1, "Steady": 1})
-    )
-    # Keep only patients with any med change
+    df_work = df.copy()
+    df_work[med_cols] = df_work[med_cols].replace("?", pd.NA).replace({"No": 0, "Up": 1, "Down": 1, "Steady": 1})
     df_work = df_work[df_work[med_cols].isin([1]).any(axis=1)]
+    color_full = primary_color
+    color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
+    color_light = color_utils.desaturate(primary_color, 0.05, 1.0)
 
-    def label(v):
-        if v == "NO":
-            return "NO"
-        elif v == "<30":
-            return "<30"
-        else:
-            return ">30"
-
-    if readmission_type != "Any":
-        df_work["readmitted"].replace(">30", "NO", inplace=True)
-    df_work["readmission_label"] = df_work["readmitted"].map(label)
-
-    counts = (
-        df_work
-        .groupby(["race", "readmission_label"], as_index=False)
-        .size()
-        .rename(columns={"size": "count"})
-    )
-
-    if readmission_type != "Any":
-        counts = counts[counts["readmission_label"].isin(["NO", "<30"])]
-
-    base = alt.Chart(counts)
-    if race_selection is not None:
-        base = base.add_params(race_selection).transform_filter(race_selection)
-
-
-
+    base = alt.Chart(df_work)
     if readmission_type == "Any":
         color_domain = ["NO", "<30", ">30"]
-        color_range = [color_light, color_medium, color_full]
+        color_range = [color_light, color_medium, color_full, ]
     else:
         color_domain = ["NO", "<30"]
         color_range = [color_light, color_full]
 
+    # Only add selection    if passed
+    if race_selection is not None:
+        base = base.add_params(race_selection).transform_filter(race_selection)
+
     pie_chart = (
         base
+        .transform_calculate(
+            readmission_label="""
+                    datum.readmitted == 'NO' ? 'NO' :
+                    datum.readmitted == '<30' ? '<30' :
+                    '>30'
+                """
+        )
+        # Aggregation happens after filtering, and we keep race column
+        .transform_aggregate(
+            count='count()',
+            groupby=['readmission_label', 'race']
+        )
         .mark_arc()
         .encode(
-            theta="sum(count):Q",
-            color=alt.Color("readmission_label:N",
+            theta='count:Q',
+            color=alt.Color('readmission_label:N',
                             scale=alt.Scale(domain=color_domain, range=color_range)),
-            tooltip=[
-                alt.Tooltip("readmission_label:N"),
-                alt.Tooltip("sum(count):Q", title="Count")
-            ],
+            tooltip=['readmission_label:N', 'count:Q'],
+
         )
-        .properties(width=250, height=350)
+        .properties(width=500, height=500)
     )
     return pie_chart
-
-
-
 
 import pandas as pd
 import re
