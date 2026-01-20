@@ -1,0 +1,240 @@
+from pyvis.network import Network
+import streamlit as st
+import pandas as pd
+import altair as alt
+
+import matplotlib.pyplot as plt
+from basicplots import get_barchart, get_piechart, getStackedBarChart, getMosaic
+from cluster import render_graph, build_graph
+from filters import load_data_full, prepare_df, filter_all
+from upset import getUpsetPlot
+from overviewPlots import getOverviewPlots
+
+st.set_page_config(page_title="Dataset Overview", page_icon="📊", layout="wide")
+
+st.title("Dataset Overview")
+st.markdown("""
+This section provides an overview of the diabetic dataset used for analysis.
+""")
+
+dataframe, medication_column_names_filtered = load_data_full()
+
+# Display basic dataset info
+st.subheader("Dataset Summary")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Total Patient Encounters", f"{len(dataframe):,}", border=True)
+with col2:
+    st.metric("Number of Features", f"{len(dataframe.columns)}", border=True)
+with col3:
+    st.metric("Number of Medications", f"{len(medication_column_names_filtered)}", border=True)
+# -------------------------------
+# Demographics Section
+# -------------------------------
+st.header("Patient Demographics")
+
+demo_col1, demo_col2 = st.columns(2, width="stretch")
+
+with demo_col1:
+    # Gender Distribution
+    gender_counts = dataframe['gender'].value_counts().reset_index()
+    gender_counts.columns = ['gender', 'count']
+    
+    select = alt.selection_point(fields=['gender'], name='select')
+    
+    gender_chart = alt.Chart(gender_counts).mark_arc(innerRadius=50).encode(
+        theta=alt.Theta('count:Q'),
+        color=alt.Color('gender:N', title='Gender'),
+        tooltip=['gender', 'count'],
+        opacity=alt.condition(select, alt.value(1), alt.value(0.5))
+    ).add_params(
+        select
+    ).properties(
+        title='Gender Distribution (click to filter)',
+        height=300
+    )
+    gender_selection = st.altair_chart(gender_chart, on_select="rerun", key="gender_filter")
+
+    # Apply gender filter
+    filtered_df = dataframe.copy()
+    if gender_selection and gender_selection.selection and 'select' in gender_selection.selection:
+        points = gender_selection.selection['select']
+        if points:
+            selected_genders = [p.get('gender') for p in points if 'gender' in p]
+            if selected_genders:
+                filtered_df = filtered_df[filtered_df['gender'].isin(selected_genders)]
+                st.info(f"Filtered by Gender: {', '.join(selected_genders)} — Showing {len(filtered_df):,} of {len(dataframe):,} encounters")
+
+with demo_col2:
+    # Age Distribution
+    age_counts = filtered_df['age'].value_counts().reset_index()
+    #age_counts = dataframe['age'].value_counts().reset_index()
+    age_counts.columns = ['age', 'count']
+    # Sort by age range
+    age_order = ['[0-10)', '[10-20)', '[20-30)', '[30-40)', '[40-50)', 
+                 '[50-60)', '[60-70)', '[70-80)', '[80-90)', '[90-100)']
+    
+    age_chart = alt.Chart(age_counts).mark_bar().encode(
+        x=alt.X('age:N', sort=age_order, title='Age Range'),
+        y=alt.Y('count:Q', title='Number of Encounters'),
+        tooltip=['age', 'count']
+    ).properties(
+        title='Age Distribution',
+        height=300
+    )
+    st.altair_chart(age_chart, width="stretch")
+
+
+
+
+# Race Distribution
+race_counts = filtered_df['race'].value_counts().reset_index()
+race_counts.columns = ['race', 'count']
+
+race_chart = alt.Chart(race_counts).mark_bar().encode(
+    x=alt.X('race:N', sort='-y', title='Race'),
+    y=alt.Y('count:Q', title='Number of Encounters'),
+    tooltip=['race', 'count']
+).properties(
+    title='Ethnicity Distribution',
+    height=300
+)
+
+demo_col1, demo_col2 = st.columns(2)
+with demo_col1:
+    st.altair_chart(race_chart)
+
+# -------------------------------
+# Clinical Outcomes Section
+# -------------------------------
+st.header("Clinical Outcomes")
+
+outcome_col1, outcome_col2 = st.columns(2)
+
+with outcome_col1:
+    # Readmission Distribution
+    readmit_counts = filtered_df['readmitted'].value_counts().reset_index()
+    readmit_counts.columns = ['readmitted', 'count']
+    
+    readmit_chart = alt.Chart(readmit_counts).mark_arc(innerRadius=50).encode(
+        theta=alt.Theta('count:Q'),
+        color=alt.Color('readmitted:N', title='Readmission Status',
+                       scale=alt.Scale(domain=['NO', '<30', '>30'], 
+                                      range=['#2ecc71', '#e74c3c', '#f39c12'])),
+        tooltip=['readmitted', 'count']
+    ).properties(
+        title='Readmission Distribution',
+        height=300
+    )
+    st.altair_chart(readmit_chart)
+
+with outcome_col2:
+    # Time in Hospital Distribution
+    time_counts = filtered_df['time_in_hospital'].value_counts().reset_index()
+    time_counts.columns = ['days', 'count']
+    
+    time_chart = alt.Chart(time_counts).mark_bar().encode(
+        x=alt.X('days:O', title='Days in Hospital'),
+        y=alt.Y('count:Q', title='Number of Encounters'),
+        tooltip=['days', 'count']
+    ).properties(
+        title='Length of Hospital Stay',
+        height=300
+    )
+    st.altair_chart(time_chart)
+
+# -------------------------------
+# Healthcare Utilization Section
+# -------------------------------
+st.header("Healthcare Utilization")
+
+util_col1, util_col2, util_col3 = st.columns(3)
+
+with util_col1:
+    # Number of Lab Procedures
+    lab_hist = alt.Chart(filtered_df).mark_bar().encode(
+        x=alt.X('num_lab_procedures:Q', bin=alt.Bin(maxbins=20), title='Lab Procedures'),
+        y=alt.Y('count():Q', title='Encounters'),
+        tooltip=[alt.Tooltip('num_lab_procedures:Q', bin=alt.Bin(maxbins=20)), 'count()']
+    ).properties(
+        title='Lab Procedures Distribution',
+        height=250
+    )
+    st.altair_chart(lab_hist)
+
+with util_col2:
+    # Number of Medications
+    med_hist = alt.Chart(filtered_df).mark_bar().encode(
+        x=alt.X('num_medications:Q', bin=alt.Bin(maxbins=20), title='Medications'),
+        y=alt.Y('count():Q', title='Encounters'),
+        tooltip=[alt.Tooltip('num_medications:Q', bin=alt.Bin(maxbins=20)), 'count()']
+    ).properties(
+        title='Medications per Encounter',
+        height=250
+    )
+    st.altair_chart(med_hist)
+
+with util_col3:
+    # Number of Diagnoses
+    diag_counts = filtered_df['number_diagnoses'].value_counts().reset_index()
+    diag_counts.columns = ['diagnoses', 'count']
+    
+    diag_chart = alt.Chart(diag_counts).mark_bar().encode(
+        x=alt.X('diagnoses:O', title='Number of Diagnoses'),
+        y=alt.Y('count:Q', title='Encounters'),
+        tooltip=['diagnoses', 'count']
+    ).properties(
+        title='Diagnoses per Encounter',
+        height=250
+    )
+    st.altair_chart(diag_chart)
+
+# -------------------------------
+# Prior Visits Section
+# -------------------------------
+st.header("Prior Healthcare Visits")
+
+visit_col1, visit_col2, visit_col3 = st.columns(3)
+
+with visit_col1:
+    outpatient_counts = filtered_df['number_outpatient'].clip(upper=10).value_counts().reset_index()
+    outpatient_counts.columns = ['visits', 'count']
+    
+    outpatient_chart = alt.Chart(outpatient_counts).mark_bar().encode(
+        x=alt.X('visits:O', title='Outpatient Visits'),
+        y=alt.Y('count:Q', title='Encounters'),
+        tooltip=['visits', 'count']
+    ).properties(
+        title='Prior Outpatient Visits',
+        height=250
+    )
+    st.altair_chart(outpatient_chart)
+
+with visit_col2:
+    emergency_counts = filtered_df['number_emergency'].clip(upper=10).value_counts().reset_index()
+    emergency_counts.columns = ['visits', 'count']
+    
+    emergency_chart = alt.Chart(emergency_counts).mark_bar().encode(
+        x=alt.X('visits:O', title='Emergency Visits'),
+        y=alt.Y('count:Q', title='Encounters'),
+        tooltip=['visits', 'count']
+    ).properties(
+        title='Prior Emergency Visits',
+        height=250
+    )
+    st.altair_chart(emergency_chart)
+
+with visit_col3:
+    inpatient_counts = filtered_df['number_inpatient'].clip(upper=10).value_counts().reset_index()
+    inpatient_counts.columns = ['visits', 'count']
+    
+    inpatient_chart = alt.Chart(inpatient_counts).mark_bar().encode(
+        x=alt.X('visits:O', title='Inpatient Visits'),
+        y=alt.Y('count:Q', title='Encounters'),
+        tooltip=['visits', 'count']
+    ).properties(
+        title='Prior Inpatient Visits',
+        height=250
+    )
+    st.altair_chart(inpatient_chart)
+
