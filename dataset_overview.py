@@ -82,7 +82,7 @@ with demo_col2:
         title='Age Distribution',
         height=300
     )
-    st.altair_chart(age_chart, width="stretch")
+    st.altair_chart(age_chart)
 
 
 
