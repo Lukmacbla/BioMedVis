@@ -221,7 +221,7 @@ with col_stat1:
         correlations.style.background_gradient(cmap='RdYlGn', vmin=-1, vmax=1).format('{:.3f}'),
         use_container_width=True
     )
-    st.caption("Pearson correlation coefficients. Values closer to 1 or -1 indicate stronger linear relationships.")
+    st.caption("Pearson correlation coefficients.")
 
 with col_stat2:
     st.subheader("Key Insights")
