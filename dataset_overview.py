@@ -92,7 +92,7 @@ race_counts = filtered_df['race'].value_counts().reset_index()
 race_counts.columns = ['race', 'count']
 
 race_chart = alt.Chart(race_counts).mark_bar().encode(
-    x=alt.X('race:N', sort='-y', title='Race'),
+    x=alt.X('race:N', sort='-y', title='Ethnicity'),
     y=alt.Y('count:Q', title='Number of Encounters'),
     tooltip=['race', 'count']
 ).properties(
