@@ -1,4 +1,11 @@
-# BioMedVis
+# Diabetic Dataset Analysis
 
-No problem 
+## Getting Started
+
+```
 pip install -r requirements.txt
+```
+
+```
+streamlit run main.py
+```
