@@ -12,7 +12,7 @@ from overviewPlots import getOverviewPlots
 
 st.set_page_config(page_title="Correlations", page_icon="📊", layout="wide")
 
-st.title("Readmission Impact Analysis")
+st.title("Relations of Key Metrics")
 st.markdown("""
 This section explores correlations between different metrics and their impact on patient readmission rates.
 Data on this page includes a random subset of 10,000 records for performance reasons.

@@ -184,7 +184,7 @@ pages = {
     "Navigation": [
         st.Page("dataset_overview.py", title="Dataset Overview"),
         st.Page(main, title="Medication Analysis"),
-        st.Page("correlations.py", title="Readmission Impact Analysis"),
+        st.Page("correlations.py", title="Relations of Key Metrics"),
     ]
 }
 
