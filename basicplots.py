@@ -3,7 +3,7 @@ import pandas as pd
 import re
 
 from globals import primary_color
-from utils import color_utils
+from utils import color_utils, icd9_to_category
 
 color_full = primary_color
 color_medium = color_utils.desaturate(primary_color, 0.4, 1.0)
@@ -64,6 +64,7 @@ def get_piechart(df, readmission_type, med_cols, race_selection=None):
         .properties(width=500, height=500)
     )
     return pie_chart
+
 
 def icd9_to_category(code: str) -> str:
     """Map an ICD-9(-CM) diagnosis code (001-999, V, E) to a high-level category."""

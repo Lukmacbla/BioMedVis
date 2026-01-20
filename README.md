@@ -1,7 +1,13 @@
-# BioMedVis
-## Install requirements
+# Diabetic Dataset Analysis
+
+## Getting Started
+
+```
 pip install -r requirements.txt
-## Run application
+```
+
+```
 streamlit run main.py
-## Link to visualization
+```
+
 https://vis.wolffhardt.net

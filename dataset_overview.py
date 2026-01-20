@@ -142,7 +142,6 @@ st.header("Healthcare Utilization")
 util_col1, util_col2, util_col3 = st.columns(3)
 
 with util_col1:
-    # Number of Lab Procedures - precompute bins
     lab_bins = pd.cut(filtered_df['num_lab_procedures'], bins=20)
     lab_counts = lab_bins.value_counts().sort_index().reset_index()
     lab_counts.columns = ['bin', 'count']
